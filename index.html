@@ -655,7 +655,7 @@ function setMain(){
   const b = document.getElementById('newBtn'), t = document.getElementById('newTxt');
   const book = unsuitable && !bookedThis;
   b.classList.toggle('book', book);
-  t.textContent = book ? '📅 احجز له موعد' : 'عميل جديد';
+  t.textContent = book ? '📅 أنسب موعد متوفر' : 'عميل جديد';
   b.querySelector('svg').style.display = book ? 'none' : '';
 }
 function renderDefer(p){
@@ -677,7 +677,7 @@ function renderDefer(p){
   else D('--vlow', '📅 القرار: لا تفحصه الآن، احجز له موعد');
   { const n = new Date(), rm = examType(dstr(n), hm(n)) === 'remote'; const rl = document.getElementById('remoteNow'); rl.hidden = !(rm && ph !== 'closed'); }
   el.classList.remove('must');
-  if (ph === 'late' && p < 70){ el.hidden = false; el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعدًا</button><div>بعد 11 م الفحص فقط للشراء المؤكد.</div>'; return; }
+  if (ph === 'late' && p < 70){ el.hidden = false; el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 أنسب موعد متوفر</button><div>بعد 11 م الفحص فقط للشراء المؤكد.</div>'; return; }
   if (p >= 45){ el.hidden = true; return; }
   el.hidden = false;
   if (needy){
@@ -694,7 +694,7 @@ function renderDefer(p){
   L.push(['موعد بعد ساعة', 'عندنا فحوصات قبلك، تحب نحجز لك موعد بعد ساعة إن شاء الله؟']);
   if (h >= 18) L.push(['الوقت زحمة', 'أفضل وقت للفحص الصبح، يكون هادي وناخذ راحتنا معك، أحجز لك بكرة؟']);
   else L.push(['خذ رقمه', 'الفحص ياخذ وقته عشان يطلع دقيق، أسجّل رقمك ونكلمك أول ما يفضى الدكتور؟']);
-  el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعد بعد ساعة</button>' +
+  el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 أنسب موعد متوفر</button>' +
     '<details class="dd"><summary><h4>🕐 جمل التأجيل بلطف</h4></summary>' +
     L.slice(0, 3).map(x => `<div class="line"><small>${x[0]}</small>«${x[1]}»</div>`).join('') + '</details>' +
     '<div class="no">🚫 لا تكذب عليه، مثل أن تقول إن الجهاز معطّل أو الدكتور غير موجود.</div>';
