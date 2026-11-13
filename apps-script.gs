@@ -70,6 +70,24 @@ function doPost(e){
       const rows = v.filter(r => r[1] === d.date).map(r => ({id:r[0], date:r[1], made:r[2], name:r[3], phone:r[4], time:r[5], status:r[6], score:r[7], tier:r[8]}));
       return out({ok:true, rows});
     }
+    if (d.action === 'search'){
+      const v = sh(B_SHEET, B_HEAD).getDataRange().getDisplayValues().slice(1);
+      const rows = v.filter(r => String(r[4]).includes(d.q)).slice(-30).map(r => ({id:r[0], date:r[1], made:r[2], name:r[3], phone:r[4], time:r[5], status:r[6], score:r[7], tier:r[8]}));
+      return out({ok:true, rows});
+    }
+    if (d.action === 'edit' || d.action === 'delete'){
+      const s = sh(B_SHEET, B_HEAD);
+      const ids = s.getRange(1, 1, s.getLastRow(), 1).getDisplayValues().flat();
+      const i = ids.indexOf(d.id);
+      if (i > 0){
+        if (d.action === 'delete') s.deleteRow(i + 1);
+        else {
+          s.getRange(i + 1, 2).setValue(t(d.date)); s.getRange(i + 1, 4).setValue(t(d.name)); s.getRange(i + 1, 5).setValue(t(d.phone));
+          s.getRange(i + 1, 6).setValue(t(d.time)); s.getRange(i + 1, 7).setValue(d.status || 'قادم'); s.getRange(i + 1, 10).setValue(new Date());
+        }
+      }
+      return out({ok:true});
+    }
     return out({ok:false, error:'unknown action'});
   } catch(err){
     return out({ok:false, error:String(err)});

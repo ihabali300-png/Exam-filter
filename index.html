@@ -169,6 +169,9 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .mwhen{font-family:var(--display);font-weight:800;text-align:center;background:var(--bg);border-radius:10px;padding:8px}
 .mwhen[hidden],.pick[hidden]{display:none}
 .pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.srch input{font:inherit;width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);text-align:right}
+.srch input:focus{outline:none;border-color:var(--accent)}
+.bkrow .acts{flex-wrap:wrap}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
@@ -222,6 +225,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
           <span class="cnt" id="bkCnt">0</span>
           <span class="conn" id="conn"><i></i><span>محلي</span></span>
         </div>
+        <div class="srch"><input id="bkQ" type="text" inputmode="tel" maxlength="10" placeholder="🔍 ابحث برقم الجوال" autocomplete="off" aria-label="ابحث عن موعد برقم الجوال" dir="ltr"></div>
         <div id="bkList"><p class="empty">لا توجد مواعيد محجوزة الآن</p></div>
         <button type="button" class="opt" id="bkAdd" style="justify-content:center">＋ حجز موعد</button>
       </div>
@@ -628,7 +632,10 @@ async function flush(){
   try {
     while (queue.length){ await call(queue[0]); queue.shift(); LS.set('q', queue); }
     setConn('on');
-  } catch(e){ setConn('err'); }
+  } catch(e){
+    if (/كود الشيت قديم/.test(e.message)){ queue.shift(); LS.set('q', queue); toast('⚠️ ' + e.message); return flush(); }
+    setConn('err');
+  }
 }
 async function pull(){
   if (!API) return;
@@ -648,7 +655,11 @@ function toast(t){
 
 /* ====== نافذة الحجز ====== */
 const modal = document.getElementById('modal');
+let editingId = null;
 function openBook(){
+  editingId = null;
+  document.getElementById('mTitle').textContent = '📅 حجز موعد فحص';
+  document.getElementById('mOk').textContent = 'احجز الموعد';
   const d = new Date(Date.now() + 60*60000);
   d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5);
   document.getElementById('mName').value = '';
@@ -693,6 +704,14 @@ document.getElementById('mForm').addEventListener('submit', e => {
   if (!date || !time) return err.textContent = 'اختر التاريخ والوقت';
   if (new Date(date + 'T' + time) < new Date(Date.now() - 60000)) return err.textContent = 'الموعد في وقت فات، اختر وقتًا قادمًا';
   const r = Object.keys(ans).length || age !== null ? score() : null;
+  if (editingId){
+    const eb = bookings.find(x => x.id === editingId) || searchRes.find(x => x.id === editingId);
+    if (eb){ Object.assign(eb, {name, phone, date, time, status:'قادم'}); if (!bookings.includes(eb) && date >= today()) bookings.push(eb); }
+    LS.set('bk', bookings);
+    send({action:'edit', id: editingId, name, phone, date, time, status:'قادم'});
+    editingId = null; closeBook(); renderBookings();
+    return toast(`✏️ تم تعديل موعد ${name}: ${dayLabel(date)} الساعة ${fmt12(time)}`);
+  }
   const b = {id: Date.now().toString(36), date, made: hm(new Date()), name, phone, time, status:'قادم',
              score: r ? r.p : '', tier: r ? TIERS.find(x => r.p >= x.min).name : ''};
   bookings.push(b); LS.set('bk', bookings);
@@ -715,14 +734,74 @@ function dayLabel(ds){
   if (ds === dstr(tm)) return 'بكرة';
   const [y, mo, da] = ds.split('-'); return `يوم ${+da}/${+mo}`;
 }
+function openEdit(id){
+  const b = bookings.find(x => x.id === id) || searchRes.find(x => x.id === id); if (!b) return;
+  openBook();
+  editingId = id;
+  document.getElementById('mTitle').textContent = '✏️ تعديل موعد';
+  document.getElementById('mOk').textContent = 'احفظ التعديل';
+  document.getElementById('mName').value = b.name;
+  document.getElementById('mPhone').value = b.phone;
+  document.getElementById('mDate').value = b.date;
+  document.getElementById('mDate').min = '';
+  document.getElementById('mTime').value = b.time;
+  setMode('pick');
+}
+let delArm = null;
+function delBooking(id, btn){
+  if (delArm !== id){ delArm = id; btn.textContent = '⚠️ اضغط مرة ثانية للحذف'; setTimeout(() => { if (delArm === id){ delArm = null; renderBookings(); } }, 4000); return; }
+  delArm = null;
+  const b = bookings.find(x => x.id === id) || searchRes.find(x => x.id === id);
+  bookings = bookings.filter(x => x.id !== id); searchRes = searchRes.filter(x => x.id !== id);
+  LS.set('bk', bookings);
+  send({action:'delete', id});
+  renderBookings();
+  toast(`🗑 تم حذف موعد ${b ? b.name : ''}`);
+}
 function setStatus(id, status){
-  const b = bookings.find(x => x.id === id); if (!b) return;
+  const b = bookings.find(x => x.id === id) || searchRes.find(x => x.id === id); if (!b) return;
   b.status = status; LS.set('bk', bookings);
   send({action:'status', id, status});
   renderBookings();
   toast(status === 'حضر' ? `✅ ${b.name} حضر` : `✖ تم تسجيل ${b.name}: ${status}`);
 }
 
+let searchRes = [], searchQ = '';
+const qEl = document.getElementById('bkQ');
+qEl.addEventListener('input', () => {
+  qEl.value = toEn(qEl.value).replace(/\D/g, '');
+  searchQ = qEl.value; searchRes = [];
+  renderBookings();
+  clearTimeout(qEl.t);
+  if (API && searchQ.length >= 4) qEl.t = setTimeout(async () => {
+    try {
+      const j = await call({action:'search', q: searchQ});
+      if (qEl.value !== searchQ) return;
+      searchRes = j.rows; setConn('on'); renderBookings();
+    } catch(e){ toast('⚠️ ' + e.message); }
+  }, 500);
+});
+const ST_C = {'قادم':'--accent','حضر':'--good','لم يحضر':'--vlow','ملغي':'--muted'};
+function rowHTML(b, st, c, due){
+  const live = b.status === 'قادم';
+  return `<div class="bkrow${due ? ' due' : ''}">
+      <span class="nm">${String(b.name).replace(/</g,'&lt;')}</span><span class="tm">${b.date !== today() ? dayLabel(b.date) + " " : ""}${fmt12(b.time)}</span>
+      <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span>
+      <div class="acts" style="grid-column:1 / -1">
+        ${live ? `<button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
+        <button type="button" onclick="setStatus('${b.id}','لم يحضر')">✖ لم يحضر</button>
+        <button type="button" onclick="setStatus('${b.id}','ملغي')">🚫 إلغاء</button>` : ''}
+        <button type="button" onclick="openEdit('${b.id}')">✏️ تعديل</button>
+        <button type="button" onclick="delBooking('${b.id}', this)">🗑 حذف</button>
+      </div></div>`;
+}
+function renderSearch(list){
+  const loc = bookings.filter(b => String(b.phone).includes(searchQ));
+  const all = loc.concat(searchRes.filter(r => !loc.some(l => l.id === r.id)))
+    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  if (!all.length){ list.innerHTML = `<p class="empty">${API && searchQ.length >= 4 ? 'جاري البحث…' : searchQ.length < 4 ? 'اكتب ٤ أرقام على الأقل' : 'لا يوجد موعد بهذا الرقم'}</p>`; return; }
+  list.innerHTML = all.map(b => rowHTML(b, b.status === 'قادم' && b.date < today() ? 'فات موعده' : b.status, ST_C[b.status] || '--muted', false)).join('');
+}
 let alerted = {};
 function renderBookings(){
   const act = bookings.filter(b => b.status === 'قادم').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
@@ -730,6 +809,7 @@ function renderBookings(){
   const bb = document.getElementById('bb');
   bb.hidden = !act.length; bb.textContent = '📅 ' + act.length;
   const list = document.getElementById('bkList');
+  if (searchQ) return renderSearch(list);
   if (!act.length){ list.innerHTML = '<p class="empty">لا توجد مواعيد محجوزة الآن</p>'; return; }
   list.innerHTML = act.map(b => {
     const m = minsTo(b);
@@ -740,14 +820,7 @@ function renderBookings(){
     else if (m >= -GRACE){ st = `حان موعده، باقي ${GRACE + m} د سماح`; c = '--mid'; due = true; }
     else { st = 'متأخر، انتهى السماح'; c = '--vlow'; due = true; }
     if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}`); }
-    return `<div class="bkrow${due ? ' due' : ''}">
-      <span class="nm">${b.name.replace(/</g,'&lt;')}</span><span class="tm">${b.date !== today() ? dayLabel(b.date) + " " : ""}${fmt12(b.time)}</span>
-      <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span>
-      <div class="acts" style="grid-column:1 / -1">
-        <button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
-        <button type="button" onclick="setStatus('${b.id}','لم يحضر')">✖ لم يحضر</button>
-        <button type="button" onclick="setStatus('${b.id}','ملغي')">إلغاء الحجز</button>
-      </div></div>`;
+    return rowHTML(b, st, c, due);
   }).join('');
 }
 
