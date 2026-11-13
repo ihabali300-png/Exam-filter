@@ -160,6 +160,8 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .sig{margin-right:auto;align-self:flex-start;font-family:"Cairo",sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.55;text-shadow:0 1px 0 rgba(255,255,255,.9),0 -1px 0 rgba(0,0,0,.18);white-space:nowrap}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sig{text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.8)}}
 :root[data-theme="dark"] .sig{text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.8)}
+.decide{color:#fff;font-family:var(--display);font-weight:800;text-align:center;border-radius:12px;padding:10px 12px;font-size:1.02rem;line-height:1.4}
+.decide[hidden]{display:none}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
@@ -231,6 +233,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         </svg>
         <div class="pct" id="pct">—</div>
         <div class="tier" id="tier">ابدأ بالعمر</div>
+        <div class="decide" id="decide" hidden></div>
         <div class="progress" id="prog"></div>
         <div class="defer" id="defer" hidden></div>
         <div class="action" id="action"></div>
@@ -351,8 +354,8 @@ const DX = {
 const TIERS = [
   {min:70, name:'احتمالية عالية', c:'--good', a:'<b>ركّز معه:</b> فحص كامل، اعرض الإطار الذي أعجبه، وابدأ بأعلى عرض ثم انزل.'},
   {min:45, name:'احتمالية متوسطة', c:'--mid', a:'<b>اكسبه في الفحص:</b> اشرح له النتيجة ببساطة، وأرِه الفرق بين عدسته وعدسة أفضل، ودعه يجرّب إطارًا بعد الفحص.'},
-  {min:25, name:'احتمالية ضعيفة', c:'--low', a:'<b>فحص سريع:</b> اعرض أرخص نظارة كاملة مبكرًا، وخذ رقمه للمتابعة على واتساب.'},
-  {min:0,  name:'احتمالية ضعيفة جدًا', c:'--vlow', a:'<b>وفّر وقتك:</b> إن كان هناك عميل آخر فقدّمه، وإلا افحص بسرعة وخذ رقمه فقط.'}
+  {min:25, name:'احتمالية ضعيفة', c:'--low', a:'<b>حسب الزحمة:</b> إن كان الفاحص فاضيًا افحصه بسرعة واعرض أرخص نظارة كاملة مبكرًا، وإن كان مشغولًا احجز له موعدًا.'},
+  {min:0,  name:'احتمالية ضعيفة جدًا', c:'--vlow', a:'<b>لا تفحصه الآن:</b> احجز له موعدًا بعد ساعة وخذ رقمه، ووقت الفاحص للعملاء الجادين.'}
 ];
 
 const ans = {};            // single: index, multi: Set
@@ -498,6 +501,7 @@ function render(){
     document.getElementById('action').innerHTML = '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تتحدث مباشرة.';
     document.getElementById('why').innerHTML = '';
     document.getElementById('defer').hidden = true;
+    document.getElementById('decide').hidden = true;
     document.getElementById('bp').textContent = '—'; bt.textContent = 'ابدأ'; bt.style.background = 'var(--muted)';
   } else {
     const r = score(), t = TIERS.find(x => r.p >= x.min);
@@ -542,13 +546,19 @@ function render(){
 function renderDefer(p){
   const el = document.getElementById('defer');
   const sym = ans.sym, realSym = sym && [...sym].some(k => !QUESTIONS.find(q => q.id === 'sym').o[k].none);
-  const needy = ans.why === 0 || ans.why === 1 || realSym;
+  const needy = ans.why === 0 || ans.why === 1;  // نظارته انكسرت أو يشتكي فعلًا
+  const dc = document.getElementById('decide'); dc.hidden = false;
+  const D = (c, t) => { dc.style.background = `var(${c})`; dc.textContent = t; };
+  if (needy) D('--good', '✅ القرار: افحصه الآن، عنده حاجة فعلية');
+  else if (p >= 45) D('--good', '✅ القرار: افحصه الآن');
+  else if (p >= 25) D('--mid', '⚖️ القرار: افحصه لو الفاحص فاضي، وإلا احجز له موعد');
+  else D('--vlow', '📅 القرار: لا تفحصه الآن، احجز له موعد');
   el.classList.remove('must');
   if (p >= 45){ el.hidden = true; return; }
   el.hidden = false;
   if (needy){
     el.classList.add('must');
-    el.innerHTML = '<h4>✅ افحصه ولا تؤجّله</h4><div>عنده شكوى حقيقية أو نظارته انكسرت، وهذا عميل محتاج وقد يشتري بعد الفحص.</div>';
+    el.innerHTML = '<h4>✅ افحصه ولا تؤجّله</h4><div>نظارته انكسرت أو يشتكي من نظره، وهذا عميل محتاج وقد يشتري بعد الفحص.</div>';
     return;
   }
   const h = new Date().getHours();
