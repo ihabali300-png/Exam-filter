@@ -202,8 +202,13 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
   .grid{flex:1;min-height:0;grid-template-columns:290px 320px minmax(0,1fr);gap:12px}
   .col,.qs{height:100%;overflow-y:auto;scrollbar-width:thin}
   .panel{position:static}
-  .qs{flex-direction:row;align-items:flex-start}
-  .qcol{flex:1}
+  .qs{display:flex;flex-direction:column;gap:10px}
+  .qcol{display:contents}
+  .q{display:grid;grid-template-columns:200px minmax(0,1fr);align-items:center;gap:6px 12px;padding:10px 12px}
+  .q .qhead{margin:0}
+  .q .tipbox,.q .guard{grid-column:1 / -1}
+  .q .opts{grid-template-columns:repeat(auto-fit,minmax(105px,1fr))}
+  .q .hint{font-size:.72rem}
   .q{padding:10px 12px}
   .qhead{margin-bottom:8px}
   .opts{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:6px}
