@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>فلتر عملاء الفحص</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* لوحة: حبر كحلي + أزرق عدسات، وألوان دلالية للاحتمالية. التخطيط: أسئلة يمين + لوحة نتيجة ثابتة شمال */
+:root{
+  --bg:#EEF2F6; --card:#FFFFFF; --ink:#13202E; --muted:#5B6B7C; --line:#D5DDE6;
+  --accent:#2457D6; --accent-soft:#E3EBFF; --dx:#7A3FC4; --dx-soft:#F0E8FB;
+  --good:#16915A; --mid:#D98A06; --low:#D2512B; --vlow:#A3243A;
+  --display:"Cairo", "Segoe UI", Tahoma, sans-serif;
+  --body:"IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1621; --card:#16212E; --ink:#E6EDF5; --muted:#93A3B5; --line:#2A3A4C;
+    --accent:#6F95FF; --accent-soft:#1E2D4D; --dx:#B48CF0; --dx-soft:#2A2140;
+    --good:#3CC487; --mid:#F2AE35; --low:#F07A55; --vlow:#F0647C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1621; --card:#16212E; --ink:#E6EDF5; --muted:#93A3B5; --line:#2A3A4C;
+  --accent:#6F95FF; --accent-soft:#1E2D4D; --dx:#B48CF0; --dx-soft:#2A2140;
+  --good:#3CC487; --mid:#F2AE35; --low:#F07A55; --vlow:#F0647C;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;padding-bottom:96px}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+header svg{flex:none}
+h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-height:1.3;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.92rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:20px;align-items:start}
+.qs{display:flex;flex-direction:column;gap:12px}
+.q{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.q[hidden]{display:none}
+.q.dxq{border-color:var(--dx)}
+.qhead{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.qnum{font-family:var(--display);font-weight:800;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none;font-size:.95rem}
+.q.done .qnum{background:var(--accent);color:#fff}
+.dxq .qnum{background:var(--dx-soft);color:var(--dx)}
+.dxq.done .qnum{background:var(--dx);color:#fff}
+.qhead svg{flex:none;color:var(--accent)}
+.dxq .qhead svg{color:var(--dx)}
+.qt{font-family:var(--display);font-weight:600;font-size:1.05rem;margin:0}
+.hint{font-size:.8rem;color:var(--muted);background:var(--bg);border-radius:999px;padding:1px 10px}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.opt{font:inherit;font-size:.93rem;text-align:right;background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;line-height:1.35;transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--accent)}
+.opt:focus-visible,.age:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt .dot{width:11px;height:11px;border-radius:50%;flex:none;border:2px solid var(--line)}
+.multi .opt .dot{border-radius:3px}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.opt[aria-pressed="true"] .dot{background:var(--accent);border-color:var(--accent)}
+.dxq .opt:hover{border-color:var(--dx)}
+.dxq .opt[aria-pressed="true"]{border-color:var(--dx);background:var(--dx-soft)}
+.dxq .opt[aria-pressed="true"] .dot{background:var(--dx);border-color:var(--dx)}
+.agerow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.age{font:inherit;font-family:var(--display);font-weight:800;font-size:1.6rem;width:120px;text-align:center;padding:6px 10px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
+.age:focus{border-color:var(--accent)}
+.agetag{font-size:.9rem;padding:4px 12px;border-radius:999px;background:var(--bg);color:var(--muted)}
+.guard{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.guard[hidden]{display:none}
+.guard .lbl{font-size:.93rem;font-weight:600}
+.guard .opt{padding:6px 14px}
+.panel{position:sticky;top:16px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h3{font-family:var(--display);font-size:1rem;margin:0;display:flex;align-items:center;gap:8px}
+.gauge{width:100%;max-width:280px;margin:0 auto;display:block}
+.pct{font-family:var(--display);font-weight:800;font-size:2.5rem;text-align:center;line-height:1;margin-top:-6px;font-variant-numeric:tabular-nums}
+.tier{align-self:center;font-family:var(--display);font-weight:800;padding:3px 16px;border-radius:999px;color:#fff;background:var(--muted);font-size:1.02rem}
+.progress{text-align:center;color:var(--muted);font-size:.88rem}
+.action{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:.93rem}
+.action b{font-family:var(--display)}
+.why{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.why li{font-size:.8rem;padding:2px 10px;border-radius:999px;border:1px solid var(--line)}
+.why li.plus{border-color:var(--good);color:var(--good)}
+.why li.minus{border-color:var(--low);color:var(--low)}
+.dx{display:flex;flex-direction:column;gap:8px}
+.dxrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.dxrow .n{font-weight:600;font-size:.95rem}
+.dxrow .lv{font-size:.8rem;color:var(--dx);font-weight:600}
+.dxrow .track{grid-column:1 / -1;height:8px;border-radius:99px;background:var(--dx-soft);overflow:hidden}
+.dxrow .fill{height:100%;background:var(--dx);border-radius:99px;transition:width .4s}
+.dxrow .lens{grid-column:1 / -1;font-size:.82rem;color:var(--muted)}
+.empty{font-size:.9rem;color:var(--muted)}
+.addons{display:flex;flex-wrap:wrap;gap:6px}
+.addons span{font-size:.82rem;font-weight:600;padding:3px 10px;border-radius:8px;background:var(--dx-soft);color:var(--dx)}
+.note{font-size:.78rem;color:var(--muted);margin:0}
+.new{font:inherit;font-family:var(--display);font-weight:800;font-size:1.1rem;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.new:hover{filter:brightness(1.08)}
+.new:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.78rem;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.bar{display:none}
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr}
+  .panel{position:static}
+  .bar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;gap:10px;align-items:center;z-index:5}
+  .bar .bp{font-family:var(--display);font-weight:800;font-size:1.5rem;font-variant-numeric:tabular-nums}
+  .bar .bt{padding:2px 12px;border-radius:999px;color:#fff;font-family:var(--display);font-weight:600;background:var(--muted);font-size:.85rem;white-space:nowrap;flex:none}
+  .bar .bd{font-size:.82rem;color:var(--dx);font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+  .bar button{margin-inline-start:auto;flex:none;font:inherit;font-family:var(--display);font-weight:800;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer}
+  h1{font-size:1.3rem}
+  .opts{grid-template-columns:1fr 1fr}
+}
+.tipbtn{font:inherit;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;background:var(--mid);color:#fff;border:0;border-radius:999px;padding:4px 12px;cursor:pointer;animation:blink 1.4s ease-in-out infinite}
+.tipbtn[aria-expanded="true"]{animation:none;background:var(--ink);color:var(--card)}
+.tipbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.defer{border:1.5px dashed var(--low);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
+.defer[hidden]{display:none}
+.defer.must{border-style:solid;border-color:var(--good)}
+.defer h4{font-family:var(--display);margin:0;font-size:.98rem}
+.defer .line{background:var(--bg);border-radius:8px;padding:6px 10px}
+.defer .line small{display:block;color:var(--muted);font-size:.76rem}
+.defer .no{color:var(--low);font-size:.8rem}
+.bookbtn{font:inherit;font-family:var(--display);font-weight:800;background:var(--low);color:#fff;border:0;border-radius:10px;padding:10px;cursor:pointer;font-size:1rem}
+.bookbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.bk{display:flex;flex-direction:column;gap:8px}
+.bk .head{display:flex;align-items:center;gap:8px}
+.bk .cnt{font-family:var(--display);font-weight:800;background:var(--accent);color:#fff;border-radius:999px;min-width:26px;text-align:center;padding:0 8px}
+.bk .conn{margin-inline-start:auto;font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:5px}
+.bk .conn i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.bk .conn.on i{background:var(--good)} .bk .conn.err i{background:var(--low)}
+.bkrow{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center}
+.bkrow .nm{font-weight:600}
+.bkrow .tm{font-family:var(--display);font-weight:800;font-variant-numeric:tabular-nums}
+.bkrow .st{font-size:.8rem;font-weight:600;border-radius:999px;padding:1px 10px;justify-self:start;color:#fff}
+.bkrow .acts{display:flex;gap:6px;justify-self:end}
+.bkrow .acts button{font:inherit;font-size:.8rem;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:2px 8px;cursor:pointer}
+.bkrow .acts button:focus-visible{outline:2px solid var(--accent)}
+.bkrow.due{border-color:var(--mid);animation:blink 1.4s ease-in-out infinite}
+.bkrow .ph{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+.modal{position:fixed;inset:0;background:rgba(5,10,20,.55);display:grid;place-items:center;z-index:20;padding:16px}
+.modal[hidden]{display:none}
+.mbox{background:var(--card);color:var(--ink);border-radius:16px;padding:18px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.mbox h3{font-family:var(--display);margin:0;font-size:1.2rem}
+.mbox label{font-weight:600;font-size:.92rem;display:flex;flex-direction:column;gap:4px}
+.mbox input{font:inherit;font-size:1.05rem;padding:8px 10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.mbox input:focus{border-color:var(--accent);outline:none}
+.mbox .err{color:var(--low);font-size:.85rem;min-height:1.2em}
+.mbox .row{display:flex;gap:8px}
+.mbox .row button{flex:1;font:inherit;font-family:var(--display);font-weight:800;border-radius:10px;padding:10px;cursor:pointer;border:0}
+.mbox .ok{background:var(--accent);color:#fff}
+.mbox .cancel{background:var(--bg);color:var(--ink);border:1.5px solid var(--line)!important}
+.mbox .grace{font-size:.82rem;color:var(--muted);background:var(--bg);border-radius:8px;padding:6px 10px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-weight:600;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:90vw;text-align:center}
+.toast[hidden]{display:none}
+.bar .bb{font-size:.82rem;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:2px 8px;flex:none}
+@keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
+.tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
+.tipbox[hidden]{display:none}
+.tipbox b{font-family:var(--display)}
+.tipbox q{display:block;font-weight:600;quotes:"«" "»"}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg width="60" height="60" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="var(--accent-soft)"/>
+      <path d="M10 32c6-9 13-13 22-13s16 4 22 13c-6 9-13 13-22 13s-16-4-22-13z" fill="var(--card)" stroke="var(--accent)" stroke-width="2.5"/>
+      <circle cx="32" cy="32" r="8" fill="var(--accent)"/>
+      <circle cx="35" cy="29" r="2.5" fill="#fff"/>
+      <path d="M44 46l7 7" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="40" cy="42" r="6" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+    </svg>
+    <div>
+      <h1>فلتر عملاء الفحص المجاني</h1>
+      <p class="sub">أسئلة سريعة تعطيك احتمالية الشراء والمشكلة المتوقعة في النظر</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="qs" id="qs" aria-label="الأسئلة">
+      <div class="q" id="q-age">
+        <div class="qhead"><span class="qnum">1</span>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>
+          <h2 class="qt"><label for="age">كم عمر العميل؟</label></h2>
+        </div>
+        <div class="agerow">
+          <input class="age" id="age" type="text" inputmode="numeric" maxlength="3" placeholder="٠٠" autocomplete="off">
+          <span class="agetag" id="agetag">اكتب العمر بالأرقام</span>
+        </div>
+        <div class="guard" id="guard" hidden>
+          <span class="lbl">معه أحد من أهله؟</span>
+          <button type="button" class="opt" id="g-yes" aria-pressed="false"><span class="dot"></span>نعم</button>
+          <button type="button" class="opt" id="g-no" aria-pressed="false"><span class="dot"></span>لا، وحده</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-live="polite">
+      <div class="card bk" id="bkCard">
+        <div class="head">
+          <h3>📅 مواعيد الفحص المحجوزة</h3>
+          <span class="cnt" id="bkCnt">0</span>
+          <span class="conn" id="conn"><i></i><span>محلي</span></span>
+        </div>
+        <div id="bkList"><p class="empty">لا توجد مواعيد محجوزة الآن</p></div>
+        <button type="button" class="opt" id="bkAdd" style="justify-content:center">＋ حجز موعد</button>
+      </div>
+      <div class="card">
+        <svg class="gauge" viewBox="0 0 220 125" aria-hidden="true">
+          <path d="M20 110 A90 90 0 0 1 56.7 37.5" fill="none" stroke="var(--vlow)" stroke-width="16"/>
+          <path d="M58.5 36.2 A90 90 0 0 1 108 20" fill="none" stroke="var(--low)" stroke-width="16"/>
+          <path d="M112 20 A90 90 0 0 1 172.6 45.1" fill="none" stroke="var(--mid)" stroke-width="16"/>
+          <path d="M174 46.5 A90 90 0 0 1 200 110" fill="none" stroke="var(--good)" stroke-width="16"/>
+          <g id="needle" style="transform-origin:110px 110px;transition:transform .5s cubic-bezier(.3,1.4,.5,1)">
+            <path d="M110 110 L110 34" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <circle cx="110" cy="110" r="9" fill="var(--ink)"/>
+          <text x="16" y="124" font-size="11" fill="var(--muted)" font-family="sans-serif">0</text>
+          <text x="194" y="124" font-size="11" fill="var(--muted)" font-family="sans-serif">100</text>
+        </svg>
+        <div class="pct" id="pct">—</div>
+        <div class="tier" id="tier">ابدأ بالعمر</div>
+        <div class="progress" id="prog"></div>
+        <div class="action" id="action"></div>
+        <ul class="why" id="why"></ul>
+        <div class="defer" id="defer" hidden></div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--dx)" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="14" r="4"/><circle cx="17.5" cy="14" r="4"/><path d="M10.5 14h3M2.5 13L4 7M21.5 13L20 7"/></svg>
+          المشكلة المتوقعة في النظر
+        </h3>
+        <div class="dx" id="dx"><p class="empty">اختر الأعراض في سؤال الشكوى ليظهر التوقع</p></div>
+        <div class="addons" id="addons"></div>
+        <p class="note">توقع مبدئي يساعدك تجهز العرض، والفحص هو الذي يحدد المقاس.</p>
+      </div>
+
+      <button class="new" id="newBtn" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+        عميل جديد
+      </button>
+      <div class="legend">
+        <span><i style="background:var(--good)"></i>عالية ٧٠٪ فأكثر</span>
+        <span><i style="background:var(--mid)"></i>متوسطة ٤٥–٦٩٪</span>
+        <span><i style="background:var(--low)"></i>ضعيفة ٢٥–٤٤٪</span>
+        <span><i style="background:var(--vlow)"></i>ضعيفة جدًا أقل من ٢٥٪</span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="bar" id="bar">
+  <span class="bp" id="bp">—</span>
+  <span class="bt" id="bt">ابدأ</span>
+  <span class="bd" id="bd"></span>
+  <span class="bb" id="bb" hidden></span>
+  <button type="button" id="newBtn2">عميل جديد</button>
+</div>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <form class="mbox" id="mForm" novalidate>
+    <h3 id="mTitle">📅 حجز موعد فحص</h3>
+    <label for="mName">اسم العميل
+      <input id="mName" type="text" autocomplete="off" placeholder="مثال: عبدالله">
+    </label>
+    <label for="mPhone">رقم الجوال
+      <input id="mPhone" type="text" inputmode="tel" maxlength="10" autocomplete="off" placeholder="05xxxxxxxx" dir="ltr">
+    </label>
+    <label for="mTime">وقت الموعد
+      <input id="mTime" type="time">
+    </label>
+    <div class="grace">⏳ مدة السماح ١٥ دقيقة بعد الموعد، وبعدها يظهر الحجز «متأخر» فتتصل به أو تلغيه.</div>
+    <div class="err" id="mErr"></div>
+    <div class="row">
+      <button type="submit" class="ok" id="mOk">احجز الموعد</button>
+      <button type="button" class="cancel" id="mCancel">إلغاء</button>
+    </div>
+  </form>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const ICONS = {
+  eye:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c3-5 6-7 10-7s7 2 10 7c-3 5-6 7-10 7s-7-2-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  pulse:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>',
+  glasses:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="14" r="4"/><circle cx="17.5" cy="14" r="4"/><path d="M10.5 14h3M2.5 13L4 7M21.5 13L20 7"/></svg>',
+  shield:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+  tag:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>'
+};
+
+/* p = نقاط الشراء، tag = سبب يظهر تحت النتيجة
+   d = أوزان التشخيص: M قصر نظر، H طول نظر، A استجماتيزم، P قراءة (شيخوخي)، S إجهاد شاشات، N قيادة ليلية */
+const QUESTIONS = [
+  {id:'why', icon:'eye', t:'سبب الزيارة؟', o:[
+    {l:'نظارته انكسرت أو ضاعت', p:30, tag:'يحتاج نظارة الآن'},
+    {l:'يشتكي من نظره', p:18, tag:'عنده شكوى'},
+    {l:'يريد تجديد نظارته', p:15, tag:'يريد التجديد'},
+    {l:'فحص فقط لأنه مجاني', p:-12, tag:'جاء للفحص المجاني'},
+    {l:'ينتظر شخصًا أو يتفرج', p:-25, tag:'لم يأتِ للشراء'}
+  ]},
+  {id:'sym', icon:'pulse', multi:true, dx:true, t:'ماذا يشتكي؟', hint:'اختر كل ما ينطبق', o:[
+    {l:'البعيد غير واضح', d:{M:3}},
+    {l:'يضيّق عينيه ليرى البعيد', d:{M:2,A:1}},
+    {l:'يُبعد الجوال ليقرأ', d:{P:3,H:2}},
+    {l:'صداع بعد القراءة', d:{H:2,A:1}},
+    {l:'الرؤية مشوشة قريب وبعيد', d:{A:3,H:1}},
+    {l:'هالات حول الأنوار ليلًا', d:{A:2,M:1,N:3}},
+    {l:'تعب وجفاف مع الشاشات', d:{S:3,H:1}},
+    {l:'لا يشتكي من شيء', none:true}
+  ]},
+  {id:'cur', icon:'glasses', t:'نظارته الحالية؟', o:[
+    {l:'عمرها سنتان أو أكثر', p:10, tag:'نظارة قديمة'},
+    {l:'جديدة، أقل من سنة', p:-10, tag:'نظارته جديدة'},
+    {l:'لا يلبس نظارة', p:0},
+    {l:'يلبس عدسات لاصقة', p:3}
+  ]},
+  {id:'ins', icon:'shield', t:'معه تأمين؟', o:[
+    {l:'نعم', p:15, tag:'معه تأمين'},
+    {l:'غير متأكد أو لم يذكر', p:5},
+    {l:'لا', p:0}
+  ]},
+  {id:'buy', icon:'tag', t:'اهتمامه بالشراء؟', o:[
+    {l:'جرّب إطارات وأعجبه واحد', p:18, tag:'اختار إطارًا'},
+    {l:'مهتم ولم يسأل عن السعر', p:8, tag:'مهتم'},
+    {l:'سأل عن السعر فقط', p:-5, tag:'يسأل عن السعر'},
+    {l:'سيشتري من موقعنا على الإنترنت', p:-15, tag:'سيشتري من موقعنا'},
+    {l:'قال سيشتري من مكان آخر', p:-25, tag:'سيشتري من مكان آخر'}
+  ]}
+];
+
+const DX = {
+  M:{n:'قصر النظر', lens:'لا يرى البعيد: عدسة للبعيد'},
+  H:{n:'طول النظر', lens:'تعب في القريب: عدسة تريح العين'},
+  A:{n:'الاستجماتيزم', lens:'تشويش على كل المسافات: عدسة تصحح الانحراف'},
+  P:{n:'ضعف القراءة مع العمر', lens:'بعد الأربعين: عدسة متعددة البؤر أو للقراءة'}
+};
+
+const TIERS = [
+  {min:70, name:'احتمالية عالية', c:'--good', a:'<b>ركّز معه:</b> فحص كامل، اعرض الإطار الذي أعجبه، وابدأ بأعلى عرض ثم انزل.'},
+  {min:45, name:'احتمالية متوسطة', c:'--mid', a:'<b>اكسبه في الفحص:</b> اشرح له النتيجة ببساطة، وأرِه الفرق بين عدسته وعدسة أفضل، ودعه يجرّب إطارًا بعد الفحص.'},
+  {min:25, name:'احتمالية ضعيفة', c:'--low', a:'<b>فحص سريع:</b> اعرض أرخص نظارة كاملة مبكرًا، وخذ رقمه للمتابعة على واتساب.'},
+  {min:0,  name:'احتمالية ضعيفة جدًا', c:'--vlow', a:'<b>وفّر وقتك:</b> إن كان هناك عميل آخر فقدّمه، وإلا افحص بسرعة وخذ رقمه فقط.'}
+];
+
+const ans = {};            // single: index, multi: Set
+let age = null, guard = null;
+const qs = document.getElementById('qs');
+
+QUESTIONS.forEach(q => {
+  const box = document.createElement('div');
+  box.className = 'q' + (q.dx ? ' dxq' : ''); box.id = 'q-' + q.id;
+  box.innerHTML = `<div class="qhead"><span class="qnum"></span>${ICONS[q.icon]}<h2 class="qt">${q.t}</h2>${q.hint ? `<span class="hint">${q.hint}</span>` : ''}</div><div class="opts${q.multi ? ' multi' : ''}" role="group" aria-label="${q.t}"></div>`;
+  const opts = box.querySelector('.opts');
+  if (q.id === 'buy'){
+    const tb = document.createElement('button');
+    tb.type = 'button'; tb.className = 'tipbtn'; tb.id = 'tip-buy';
+    tb.setAttribute('aria-expanded', 'false'); tb.setAttribute('aria-controls', 'tipbox-buy');
+    tb.innerHTML = '👀 ملاحظة الموظف';
+    box.querySelector('.qt').after(tb);
+    const tip = document.createElement('div');
+    tip.className = 'tipbox'; tip.id = 'tipbox-buy'; tip.hidden = true;
+    tip.innerHTML = `
+      <div><b>🚫 لا تسأل العميل هذا السؤال.</b> أجب عنه من ملاحظتك أنت.</div>
+      <div><b>👀 لاحظ:</b> هل جرّب إطارات؟ هل بدأ كلامه بالسعر؟ هل ذكر الموقع أو محلًا آخر؟</div>`;
+    box.insertBefore(tip, opts);
+    tb.addEventListener('click', () => {
+      const open = tip.hidden; tip.hidden = !open;
+      tb.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  q.o.forEach((o, j) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'opt'; b.id = `opt-${q.id}-${j}`;
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = `<span class="dot"></span><span>${o.l}</span>`;
+    b.addEventListener('click', () => pick(q, j));
+    opts.appendChild(b);
+  });
+  qs.appendChild(box);
+});
+
+function pick(q, j){
+  if (q.multi){
+    const s = ans[q.id] || new Set();
+    if (q.o[j].none){ s.clear(); s.add(j); }
+    else {
+      q.o.forEach((o,k) => { if (o.none) s.delete(k); });
+      s.has(j) ? s.delete(j) : s.add(j);
+    }
+    s.size ? ans[q.id] = s : delete ans[q.id];
+  } else {
+    ans[q.id] === j ? delete ans[q.id] : ans[q.id] = j;
+  }
+  sync();
+}
+
+/* الأسئلة الذكية: تختفي الأسئلة التي لا تلزم */
+function visible(id){
+  if (id === 'sym') return ans.why !== 4;                 // يتفرج: لا داعي للأعراض
+  if (id === 'cur') return ans.why !== 0 && ans.why !== 4; // انكسرت: معروف أن عنده نظارة
+  return true;
+}
+
+function sync(){
+  let n = 2;
+  QUESTIONS.forEach(q => {
+    const box = document.getElementById('q-' + q.id);
+    const show = visible(q.id);
+    box.hidden = !show;
+    if (!show) delete ans[q.id];
+    else box.querySelector('.qnum').textContent = n++;
+    const v = ans[q.id];
+    box.querySelectorAll('.opt').forEach((b, k) =>
+      b.setAttribute('aria-pressed', (q.multi ? (v && v.has(k)) : v === k) ? 'true' : 'false'));
+    box.classList.toggle('done', v !== undefined);
+  });
+  document.getElementById('q-age').classList.toggle('done', age !== null && (age > 18 || guard !== null));
+  document.getElementById('g-yes').setAttribute('aria-pressed', guard === true);
+  document.getElementById('g-no').setAttribute('aria-pressed', guard === false);
+  render();
+}
+
+/* العمر */
+const ageEl = document.getElementById('age');
+ageEl.addEventListener('input', () => {
+  const v = ageEl.value.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '');
+  ageEl.value = v;
+  age = v && +v > 0 && +v < 110 ? +v : null;
+  const tag = document.getElementById('agetag');
+  const g = document.getElementById('guard');
+  if (age === null){ tag.textContent = 'اكتب العمر بالأرقام'; g.hidden = true; guard = null; }
+  else if (age <= 18){ tag.textContent = 'قوة شرائية ضعيفة'; g.hidden = false; }
+  else { g.hidden = true; guard = null;
+    tag.textContent = age >= 40 ? 'سن ضعف القراءة' : age >= 26 ? 'سن قوة شرائية' : 'شاب'; }
+  sync();
+});
+document.getElementById('g-yes').addEventListener('click', () => { guard = guard === true ? null : true; sync(); });
+document.getElementById('g-no').addEventListener('click', () => { guard = guard === false ? null : false; sync(); });
+
+function agePts(){
+  if (age === null) return [0];
+  if (age <= 18) return guard === true ? [5, 'معه ولي أمر'] : guard === false ? [-20, 'صغير ووحده'] : [-12, 'عمره ١٨ أو أقل'];
+  if (age <= 25) return [0];
+  if (age <= 39) return [8, 'سن قوة شرائية'];
+  return [12, 'سن ضعف القراءة'];
+}
+
+function score(){
+  let s = 30, plus = [], minus = [];
+  const add = (p, t) => { s += p; if (t) (p > 0 ? plus : p < 0 ? minus : []).push(t); };
+  const [ap, at] = agePts(); add(ap, at);
+  QUESTIONS.forEach(q => {
+    const v = ans[q.id]; if (v === undefined) return;
+    if (q.multi){
+      const real = [...v].filter(k => !q.o[k].none).length;
+      if (real) add(Math.min(15, real * 5), real > 1 ? `${real} أعراض` : 'عرض واحد');
+      else add(-10, 'لا يشتكي');
+    } else { const o = q.o[v]; add(o.p, o.tag); }
+  });
+  return {p: Math.max(3, Math.min(95, s)), plus, minus};
+}
+
+function diagnose(){
+  const v = ans.sym, sc = {M:0,H:0,A:0,P:0,S:0,N:0};
+  if (v) [...v].forEach(k => { const d = QUESTIONS[1].o[k].d || {}; for (const x in d) sc[x] += d[x]; });
+  const any = v && [...v].some(k => !QUESTIONS[1].o[k].none);
+  if (age !== null){
+    if (age >= 40){ sc.P += any ? 2 : 0; sc.H = Math.max(0, sc.H - 1); if (age >= 45) sc.P += 2; }
+    else { sc.H += sc.P; sc.P = 0; }  // تحت الأربعين: صعوبة القريب غالبًا طول نظر
+  }
+  return {sc, any};
+}
+
+function render(){
+  const visQ = QUESTIONS.filter(q => visible(q.id));
+  const n = (age !== null ? 1 : 0) + visQ.filter(q => ans[q.id] !== undefined).length;
+  const total = visQ.length + 1;
+  const pctEl = document.getElementById('pct'), tierEl = document.getElementById('tier');
+  const bt = document.getElementById('bt');
+  document.getElementById('prog').textContent = `أجبت ${n} من ${total}`;
+
+  if (n === 0){
+    pctEl.textContent = '—'; pctEl.style.color = ''; tierEl.textContent = 'ابدأ بالعمر'; tierEl.style.background = 'var(--muted)';
+    document.getElementById('needle').style.transform = 'rotate(0deg)';
+    document.getElementById('action').innerHTML = '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تتحدث مباشرة.';
+    document.getElementById('why').innerHTML = '';
+    document.getElementById('defer').hidden = true;
+    document.getElementById('bp').textContent = '—'; bt.textContent = 'ابدأ'; bt.style.background = 'var(--muted)';
+  } else {
+    const r = score(), t = TIERS.find(x => r.p >= x.min);
+    pctEl.textContent = r.p + '٪'; pctEl.style.color = `var(${t.c})`;
+    tierEl.textContent = t.name; tierEl.style.background = `var(${t.c})`;
+    document.getElementById('needle').style.transform = `rotate(${(r.p - 50) * 1.8}deg)`;
+    let act = t.a;
+    if (age !== null && age <= 18) act += '<br><b>تنبيه:</b> العميل صغير، اسأله من سيدفع وهل أهله قادمون.';
+    if (ans.buy === 3) act += '<br><b>تنبيه:</b> يريد الشراء من موقعنا، أخبره أن نفس العروض متاحة هنا مع قياس دقيق وتركيب وصيانة مجانية.';
+    if (ans.ins === 1) act += '<br><b>تنبيه:</b> بعض العملاء يخفون التأمين، طمئنه أن السعر لن يتغير.';
+    document.getElementById('action').innerHTML = act;
+    document.getElementById('why').innerHTML =
+      r.plus.map(x => `<li class="plus">＋ ${x}</li>`).join('') + r.minus.map(x => `<li class="minus">− ${x}</li>`).join('');
+    renderDefer(r.p);
+    document.getElementById('bp').textContent = r.p + '٪'; bt.textContent = t.name; bt.style.background = `var(${t.c})`;
+  }
+
+  /* التشخيص المتوقع */
+  const {sc, any} = diagnose();
+  const list = ['M','H','A','P'].map(k => ({k, v:sc[k]})).filter(x => x.v > 0).sort((a,b) => b.v - a.v);
+  const dxEl = document.getElementById('dx'), adEl = document.getElementById('addons'), bd = document.getElementById('bd');
+  if (!list.length){
+    dxEl.innerHTML = `<p class="empty">${ans.sym && !any ? 'لا توجد شكوى واضحة، غالبًا نظره سليم أو مقاسه بسيط' : 'اختر الأعراض في سؤال الشكوى ليظهر التوقع'}</p>`;
+    bd.textContent = '';
+  } else {
+    const max = Math.max(5, list[0].v);
+    dxEl.innerHTML = list.slice(0, 3).map((x, i) => {
+      const w = Math.round(x.v / max * 100);
+      const lv = w >= 70 ? 'مرجّح جدًا' : w >= 40 ? 'محتمل' : 'احتمال بسيط';
+      return `<div class="dxrow"><span class="n">${i === 0 ? '👁 ' : ''}${DX[x.k].n}</span><span class="lv">${lv}</span><div class="track"><div class="fill" style="width:${w}%"></div></div><span class="lens">${DX[x.k].lens}</span></div>`;
+    }).join('');
+    bd.textContent = 'متوقع: ' + DX[list[0].k].n;
+  }
+  const ad = [];
+  if (sc.S > 0) ad.push('اقترح فلتر الضوء الأزرق');
+  if (sc.N > 0) ad.push('اقترح عدسة القيادة الليلية');
+  if (sc.P > 0 && age >= 40) ad.push('اعرض العدسة متعددة البؤر');
+  adEl.innerHTML = ad.map(x => `<span>${x}</span>`).join('');
+}
+
+/* التأجيل بلطف: يظهر فقط للاحتمالية الضعيفة، ويختار الجمل حسب حالة العميل والوقت */
+function renderDefer(p){
+  const el = document.getElementById('defer');
+  const sym = ans.sym, realSym = sym && [...sym].some(k => !QUESTIONS[1].o[k].none);
+  const needy = ans.why === 0 || ans.why === 1 || realSym;
+  el.classList.remove('must');
+  if (p >= 45){ el.hidden = true; return; }
+  el.hidden = false;
+  if (needy){
+    el.classList.add('must');
+    el.innerHTML = '<h4>✅ افحصه ولا تؤجّله</h4><div>عنده شكوى حقيقية أو نظارته انكسرت، وهذا عميل محتاج وقد يشتري بعد الفحص.</div>';
+    return;
+  }
+  const h = new Date().getHours();
+  const L = [];
+  if (ans.why === 4)
+    L.push(['لا يحتاج فحصًا الآن', 'حيّاك الله، تفضّل شوف الإطارات على راحتك، ولو حبيت تفحص نظرك نحجز لك موعد.']);
+  if (ans.why === 3 && ans.cur === 1)
+    L.push(['نظارته جديدة', 'نظارتك شكلها لسه زينة، ولو حسيت بتعب أو زغللة تعال نفحصك بأي وقت.']);
+  L.push(['موعد بعد ساعة', 'عندنا فحوصات قبلك، تحب نحجز لك موعد بعد ساعة إن شاء الله؟']);
+  if (h >= 18) L.push(['الوقت زحمة', 'أفضل وقت للفحص الصبح، يكون هادي وناخذ راحتنا معك، أحجز لك بكرة؟']);
+  else L.push(['خذ رقمه', 'الفحص ياخذ وقته عشان يطلع دقيق، أسجّل رقمك ونكلمك أول ما يفضى الدكتور؟']);
+  el.innerHTML = '<h4>🕐 أجّله بلطف</h4>' +
+    L.slice(0, 3).map(x => `<div class="line"><small>${x[0]}</small>«${x[1]}»</div>`).join('') +
+    '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعد بعد ساعة</button>' +
+    '<div class="no">🚫 لا تكذب عليه، مثل أن تقول إن الجهاز معطّل أو الدكتور غير موجود.</div>';
+}
+
+/* ====== الربط مع جوجل شيت ====== */
+const API = '';            // رابط Apps Script بعد النشر
+const TOKEN = 'tabukpark';
+const GRACE = 15;          // دقائق السماح
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+const toEn = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+const LS = {
+  get(k, f){ try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch(e){ return f; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+let bookings = LS.get('bk', []).filter(b => b.date === today());
+let queue = LS.get('q', []);
+let bookedThis = false;
+
+function setConn(state){
+  const c = document.getElementById('conn');
+  c.className = 'conn' + (state === 'on' ? ' on' : state === 'err' ? ' err' : '');
+  c.querySelector('span').textContent = state === 'on' ? 'متصل بالشيت' : state === 'err' ? 'غير متصل' : 'محلي';
+}
+async function call(body){
+  const r = await fetch(API, {method:'POST', body: JSON.stringify({token: TOKEN, ...body})});
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error === 'unknown action' ? 'كود الشيت قديم، حدّثه وانشره كإصدار جديد' : (j.error || 'خطأ'));
+  return j;
+}
+async function send(body){
+  if (!API) return;
+  queue.push(body); LS.set('q', queue); await flush();
+}
+async function flush(){
+  if (!API || !queue.length) return;
+  try {
+    while (queue.length){ await call(queue[0]); queue.shift(); LS.set('q', queue); }
+    setConn('on');
+  } catch(e){ setConn('err'); }
+}
+async function pull(){
+  if (!API) return;
+  try {
+    const j = await call({action:'bookings', date: today()});
+    const pending = queue.filter(q => q.action === 'book').map(q => q.id);
+    const local = bookings.filter(b => pending.includes(b.id));
+    bookings = j.rows.concat(local.filter(l => !j.rows.some(r => r.id === l.id)));
+    LS.set('bk', bookings); setConn('on'); renderBookings();
+  } catch(e){ setConn('err'); }
+}
+
+function toast(t){
+  const el = document.getElementById('toast'); el.textContent = t; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 3500);
+}
+
+/* ====== نافذة الحجز ====== */
+const modal = document.getElementById('modal');
+function openBook(){
+  const d = new Date(Date.now() + 60*60000);
+  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5);
+  document.getElementById('mName').value = '';
+  document.getElementById('mPhone').value = '';
+  document.getElementById('mTime').value = hm(d);
+  document.getElementById('mErr').textContent = '';
+  modal.hidden = false;
+  setTimeout(() => document.getElementById('mName').focus(), 50);
+}
+function closeBook(){ modal.hidden = true; }
+document.getElementById('mCancel').addEventListener('click', closeBook);
+modal.addEventListener('click', e => { if (e.target === modal) closeBook(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeBook(); });
+document.getElementById('mPhone').addEventListener('input', e => { e.target.value = toEn(e.target.value).replace(/\D/g, ''); });
+document.getElementById('bkAdd').addEventListener('click', openBook);
+
+document.getElementById('mForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('mName').value.trim();
+  const phone = document.getElementById('mPhone').value.trim();
+  const time = document.getElementById('mTime').value;
+  const err = document.getElementById('mErr');
+  if (!name) return err.textContent = 'اكتب اسم العميل';
+  if (!/^05\d{8}$/.test(phone)) return err.textContent = 'رقم الجوال لازم يبدأ بـ 05 ويكون ١٠ أرقام';
+  if (!time) return err.textContent = 'اختر وقت الموعد';
+  const r = Object.keys(ans).length || age !== null ? score() : null;
+  const b = {id: Date.now().toString(36), date: today(), made: hm(new Date()), name, phone, time, status:'قادم',
+             score: r ? r.p : '', tier: r ? TIERS.find(x => r.p >= x.min).name : ''};
+  bookings.push(b); LS.set('bk', bookings);
+  bookedThis = true;
+  send({action:'book', ...b});
+  closeBook(); renderBookings();
+  toast(`✅ تم حجز موعد ${name} الساعة ${fmt12(time)}`);
+});
+
+function fmt12(t){
+  let [h, m] = t.split(':').map(Number);
+  const s = h >= 12 ? 'م' : 'ص'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${s}`;
+}
+function minsTo(t){
+  const [h, m] = t.split(':').map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  return Math.round((d - Date.now()) / 60000);
+}
+function setStatus(id, status){
+  const b = bookings.find(x => x.id === id); if (!b) return;
+  b.status = status; LS.set('bk', bookings);
+  send({action:'status', id, status});
+  renderBookings();
+  toast(status === 'حضر' ? `✅ ${b.name} حضر` : `✖ تم تسجيل ${b.name}: ${status}`);
+}
+
+let alerted = {};
+function renderBookings(){
+  const act = bookings.filter(b => b.status === 'قادم').sort((a, b) => a.time.localeCompare(b.time));
+  document.getElementById('bkCnt').textContent = act.length;
+  const bb = document.getElementById('bb');
+  bb.hidden = !act.length; bb.textContent = '📅 ' + act.length;
+  const list = document.getElementById('bkList');
+  if (!act.length){ list.innerHTML = '<p class="empty">لا توجد مواعيد محجوزة الآن</p>'; return; }
+  list.innerHTML = act.map(b => {
+    const m = minsTo(b.time);
+    let st, c, due = false;
+    if (m > 10){ st = `بعد ${m >= 60 ? Math.floor(m/60) + ' س ' : ''}${m % 60} د`; c = '--accent'; }
+    else if (m > 0){ st = `قريب، بعد ${m} د`; c = '--mid'; due = true; }
+    else if (m >= -GRACE){ st = `حان موعده، باقي ${GRACE + m} د سماح`; c = '--mid'; due = true; }
+    else { st = 'متأخر، انتهى السماح'; c = '--vlow'; due = true; }
+    if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}`); }
+    return `<div class="bkrow${due ? ' due' : ''}">
+      <span class="nm">${b.name.replace(/</g,'&lt;')}</span><span class="tm">${fmt12(b.time)}</span>
+      <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span>
+      <div class="acts" style="grid-column:1 / -1">
+        <button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
+        <button type="button" onclick="setStatus('${b.id}','لم يحضر')">✖ لم يحضر</button>
+        <button type="button" onclick="setStatus('${b.id}','ملغي')">إلغاء الحجز</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* تسجيل العميل في الشيت عند الضغط على عميل جديد */
+function logCustomer(){
+  const n = Object.keys(ans).length + (age !== null ? 1 : 0);
+  if (!n) return false;
+  const r = score(), t = TIERS.find(x => r.p >= x.min);
+  const {sc} = diagnose();
+  const top = ['M','H','A','P'].filter(k => sc[k] > 0).sort((a, b) => sc[b] - sc[a])[0];
+  const pickL = id => { const q = QUESTIONS.find(x => x.id === id); const v = ans[id]; return v === undefined ? '' : q.multi ? [...v].map(k => q.o[k].l).join('، ') : q.o[v].l; };
+  send({action:'log', date: today(), time: hm(new Date()), age: age ?? '', why: pickL('why'), sym: pickL('sym'),
+        score: r.p, tier: t.name, dx: top ? DX[top].n : '', ins: pickL('ins'), buy: pickL('buy'), booked: bookedThis ? 'نعم' : 'لا'});
+  return true;
+}
+
+function reset(){
+  if (logCustomer() && API) toast('✅ تم تسجيل العميل في الشيت');
+  bookedThis = false;
+  Object.keys(ans).forEach(k => delete ans[k]);
+  age = null; guard = null; ageEl.value = '';
+  document.getElementById('agetag').textContent = 'اكتب العمر بالأرقام';
+  document.getElementById('guard').hidden = true;
+  sync();
+  window.scrollTo({top:0, behavior:'smooth'});
+  setTimeout(() => ageEl.focus({preventScroll:true}), 300);
+}
+document.getElementById('newBtn').addEventListener('click', reset);
+document.getElementById('newBtn2').addEventListener('click', reset);
+sync();
+renderBookings();
+setConn(API ? 'err' : 'local');
+if (API){ flush(); pull(); setInterval(pull, 60000); window.addEventListener('online', flush); }
+setInterval(renderBookings, 30000);
+</script>
+</body>
+</html>
