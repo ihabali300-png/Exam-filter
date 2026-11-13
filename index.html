@@ -181,6 +181,12 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .srch input{font:inherit;width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);text-align:right}
 .srch input:focus{outline:none;border-color:var(--accent)}
 .bkrow .acts{flex-wrap:wrap}
+.mwhen small{display:block;font-family:var(--body);font-weight:600;font-size:.82rem;color:var(--muted)}
+.mwhen small.et{color:var(--accent);margin-top:2px}
+.mwhen small.mv{color:var(--low)}
+.et2{grid-column:1 / -1;font-size:.78rem;color:var(--muted)}
+.remote{text-align:center;font-weight:700;font-size:.9rem;color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:5px}
+.remote[hidden]{display:none}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
@@ -292,6 +298,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <div class="tier" id="tier">ابدأ بالعمر</div>
         <div class="decide" id="decide" hidden></div>
         <div class="progress" id="prog"></div>
+        <div class="remote" id="remoteNow" hidden>💻 الفحص الآن عن بعد</div>
         <div class="defer" id="defer" hidden></div>
         <div class="action" id="action"></div>
         <ul class="why" id="why"></ul>
@@ -658,11 +665,19 @@ function renderDefer(p){
   unsuitable = !needy && p < 25; setMain();
   const dc = document.getElementById('decide'); dc.hidden = false;
   const D = (c, t) => { dc.style.background = `var(${c})`; dc.textContent = t; };
-  if (needy) D('--good', '✅ القرار: افحصه الآن، عنده حاجة فعلية');
+  const ph = nowPhase();
+  if (ph === 'late'){
+    unsuitable = p < 70; setMain();
+    if (p >= 70) D('--good', '✅ القرار: افحصه الآن، استثناء آخر نص ساعة لأن الشراء شبه مؤكد');
+    else D('--vlow', '🕚 القرار: انتهى وقت الفحص الساعة 11 م، احجز له موعدًا');
+  }
+  else if (needy) D('--good', '✅ القرار: افحصه الآن، عنده حاجة فعلية');
   else if (p >= 45) D('--good', '✅ القرار: افحصه الآن');
   else if (p >= 25) D('--mid', '⚖️ القرار: افحصه لو الفاحص فاضي، وإلا احجز له موعد');
   else D('--vlow', '📅 القرار: لا تفحصه الآن، احجز له موعد');
+  { const n = new Date(), rm = examType(dstr(n), hm(n)) === 'remote'; const rl = document.getElementById('remoteNow'); rl.hidden = !(rm && ph !== 'closed'); }
   el.classList.remove('must');
+  if (ph === 'late' && p < 70){ el.hidden = false; el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعدًا</button><div>بعد 11 م الفحص فقط للشراء المؤكد.</div>'; return; }
   if (p >= 45){ el.hidden = true; return; }
   el.hidden = false;
   if (needy){
@@ -689,6 +704,24 @@ function renderDefer(p){
 const API = 'https://script.google.com/macros/s/AKfycbzhRLbH30ITICyDZBFk5ZuG4jQf81TaPRHE2fJnjAiF37Ioxc05d7BRovOR23gQpAVEdQ/exec';            // رابط Apps Script بعد النشر
 const TOKEN = 'tabukpark';
 const GRACE = 15;          // دقائق السماح
+/* مواعيد الفرع: يوميًا 9:30 ص – 11:30 م، والجمعة من 3:30 م. آخر فحص 11 م، وآخر نص ساعة للشراء المؤكد فقط.
+   الدكتورة إجازتها الاثنين، وفي الفترة الصباحية الفحص عن بعد */
+const EXAM_END = '23:00', CLOSE = '23:30', DOCTOR_FROM = '16:00';
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const openOf = d => d.getDay() === 5 ? '15:30' : '09:30';
+function examType(ds, t){ const d = new Date(ds + 'T12:00'); return (d.getDay() === 1 || toMin(t) < toMin(DOCTOR_FROM)) ? 'remote' : 'doctor'; }
+const typeLabel = k => k === 'remote' ? '💻 فحص عن بعد' : '👩‍⚕️ فحص مع الدكتورة';
+function fitSlot(d){
+  d = new Date(d);
+  for (let i = 0; i < 8; i++){
+    const mins = d.getHours() * 60 + d.getMinutes(), o = toMin(openOf(d));
+    if (mins < o){ d.setHours(Math.floor(o / 60), o % 60, 0, 0); return d; }
+    if (mins <= toMin(EXAM_END)) return d;
+    d.setDate(d.getDate() + 1); d.setHours(0, 0, 0, 0);
+  }
+  return d;
+}
+function nowPhase(){ const n = new Date(), m = n.getHours() * 60 + n.getMinutes(); if (m < toMin(openOf(n)) || m >= toMin(CLOSE)) return 'closed'; return m >= toMin(EXAM_END) ? 'late' : 'open'; }
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
 const hm = d => String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 const toEn = s => s.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
@@ -748,8 +781,7 @@ function openBook(){
   editingId = null;
   document.getElementById('mTitle').textContent = '📅 حجز موعد فحص';
   document.getElementById('mOk').textContent = 'احجز الموعد';
-  const d = new Date(Date.now() + 60*60000);
-  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5);
+  const d = hourSlot();
   document.getElementById('mName').value = '';
   document.getElementById('mPhone').value = '';
   document.getElementById('mTime').value = hm(d);
@@ -762,16 +794,25 @@ function openBook(){
 }
 function closeBook(){ modal.hidden = true; }
 let mode = 'hour';
-function hourSlot(){ const d = new Date(Date.now() + 60*60000); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return d; }
+function hourSlot(){ const d = new Date(Date.now() + 60*60000); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return fitSlot(d); }
+function rawHour(){ const d = new Date(Date.now() + 60*60000); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return d; }
 function setMode(m){
   mode = m;
   document.getElementById('mHour').setAttribute('aria-pressed', m === 'hour');
   document.getElementById('mPick').setAttribute('aria-pressed', m === 'pick');
   document.getElementById('pickBox').hidden = m !== 'pick';
   const w = document.getElementById('mWhen');
-  if (m === 'hour'){ const d = hourSlot(); w.hidden = false; w.textContent = `الموعد: ${dayLabel(dstr(d))} الساعة ${fmt12(hm(d))}`; }
-  else w.hidden = true;
+  if (m === 'hour'){ const d = hourSlot(), moved = Math.abs(d - rawHour()) > 60000; w.hidden = false;
+    w.innerHTML = (moved ? '<small class="mv">بعد ساعة يكون خارج مواعيد الفحص، فهذا أقرب موعد:</small>' : '') + `الموعد: ${dayLabel(dstr(d))} الساعة ${fmt12(hm(d))}<small class="et">${typeLabel(examType(dstr(d), hm(d)))}</small>`; }
+  else { w.hidden = false; pickInfo(); }
 }
+function pickInfo(){
+  const w = document.getElementById('mWhen'), ds = document.getElementById('mDate').value, t = document.getElementById('mTime').value;
+  if (!ds){ w.textContent = ''; return; }
+  const o = openOf(new Date(ds + 'T12:00'));
+  w.innerHTML = `<small>مواعيد الفحص: ${fmt12(o)} – ${fmt12(EXAM_END)}${new Date(ds + 'T12:00').getDay() === 1 ? '، والاثنين إجازة الدكتورة' : ''}</small>` + (t ? `<small class="et">${typeLabel(examType(ds, t))}</small>` : '');
+}
+['mDate','mTime'].forEach(id => document.getElementById(id).addEventListener('input', () => { if (mode === 'pick') pickInfo(); }));
 document.getElementById('mHour').addEventListener('click', () => setMode('hour'));
 document.getElementById('mPick').addEventListener('click', () => setMode('pick'));
 document.getElementById('mCancel').addEventListener('click', closeBook);
@@ -790,6 +831,7 @@ document.getElementById('mForm').addEventListener('submit', e => {
   if (!name) return err.textContent = 'اكتب اسم العميل';
   if (!/^05\d{8}$/.test(phone)) return err.textContent = 'رقم الجوال لازم يبدأ بـ 05 ويكون ١٠ أرقام';
   if (!date || !time) return err.textContent = 'اختر التاريخ والوقت';
+  { const o = openOf(new Date(date + 'T12:00')); if (toMin(time) < toMin(o) || toMin(time) > toMin(EXAM_END)) return err.textContent = `مواعيد الفحص في هذا اليوم من ${fmt12(o)} إلى ${fmt12(EXAM_END)}`; }
   if (new Date(date + 'T' + time) < new Date(Date.now() - 60000)) return err.textContent = 'الموعد في وقت فات، اختر وقتًا قادمًا';
   const r = Object.keys(ans).length || age !== null ? score() : null;
   if (editingId){
@@ -874,7 +916,7 @@ function rowHTML(b, st, c, due){
   const live = b.status === 'قادم';
   return `<div class="bkrow${due ? ' due' : ''}">
       <span class="nm">${String(b.name).replace(/</g,'&lt;')}</span><span class="tm">${b.date !== today() ? dayLabel(b.date) + " " : ""}${fmt12(b.time)}</span>
-      <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span>
+      <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span><span class="et2">${typeLabel(examType(b.date, b.time))}</span>
       <div class="acts" style="grid-column:1 / -1">
         ${live ? `<button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
         <button type="button" onclick="setStatus('${b.id}','لم يحضر')">✖ لم يحضر</button>
