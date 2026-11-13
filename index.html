@@ -182,6 +182,54 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .tipbox b{font-family:var(--display)}
 .tipbox q{display:block;font-weight:600;quotes:"«" "»"}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn{animation:none}}
+
+/* ===== تخطيط شاشة واحدة بدون نزول ===== */
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.qcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dd summary{cursor:pointer;list-style:none;display:flex;align-items:center}
+.dd summary::-webkit-details-marker{display:none}
+.dd summary h4::after{content:" ▾";color:var(--muted)}
+.dd[open] summary h4::after{content:" ▴"}
+.dd .line{margin-top:6px}
+@media (min-width:1200px){
+  html,body{height:100%}
+  body{display:flex;flex-direction:column;padding-bottom:0;overflow:hidden}
+  .wrap{flex:1;min-height:0;display:flex;flex-direction:column;max-width:none;width:100%;padding:10px 14px}
+  header{margin-bottom:10px;gap:10px}
+  header svg{width:44px;height:44px}
+  h1{font-size:1.3rem}
+  .sub{font-size:.82rem}
+  .grid{flex:1;min-height:0;grid-template-columns:290px 320px minmax(0,1fr);gap:12px}
+  .col,.qs{height:100%;overflow-y:auto;scrollbar-width:thin}
+  .panel{position:static}
+  .qs{flex-direction:row;align-items:flex-start}
+  .qcol{flex:1}
+  .q{padding:10px 12px}
+  .qhead{margin-bottom:8px}
+  .opts{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:6px}
+  .opt{padding:7px 10px;font-size:.88rem}
+  .card{padding:12px;gap:9px}
+  .gauge{max-width:210px}
+  .pct{font-size:2.1rem}
+  .age{font-size:1.3rem;padding:4px 8px}
+  .colG .legend{display:none}
+  .pct{margin-top:-10px}
+  .action{font-size:.86rem;padding:8px 10px}
+  .decide{padding:8px 10px;font-size:.95rem}
+  .new{padding:10px}
+}
+@media (min-width:1200px) and (max-height:760px){
+  .gauge{max-width:170px}
+  .why{display:none}
+  .colG .action{display:none}
+}
+@media (min-width:860px) and (max-width:1199px){
+  .grid{grid-template-columns:340px minmax(0,1fr)}
+  .colG{grid-column:1;grid-row:1}
+  .colB{grid-column:1;grid-row:2}
+  .qs{grid-column:2;grid-row:1 / span 2}
+}
+@media (max-width:859px){ .qs{order:-1} }
 </style>
 </head>
 <body>
@@ -203,35 +251,8 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
   </header>
 
   <div class="grid">
-    <section class="qs" id="qs" aria-label="الأسئلة">
-      <div class="q" id="q-age">
-        <div class="qhead"><span class="qnum">1</span>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>
-          <h2 class="qt"><label for="age">كم عمر العميل؟</label></h2>
-        </div>
-        <div class="agerow">
-          <input class="age" id="age" type="text" inputmode="numeric" maxlength="3" placeholder="٠٠" autocomplete="off">
-          <span class="agetag" id="agetag">اكتب العمر بالأرقام</span>
-        </div>
-        <div class="guard" id="guard" hidden>
-          <span class="lbl">معه أحد من أهله؟</span>
-          <button type="button" class="opt" id="g-yes" aria-pressed="false"><span class="dot"></span>نعم</button>
-          <button type="button" class="opt" id="g-no" aria-pressed="false"><span class="dot"></span>لا، وحده</button>
-        </div>
-      </div>
-    </section>
 
-    <aside class="panel" aria-live="polite">
-      <div class="card bk" id="bkCard">
-        <div class="head">
-          <h3>📅 مواعيد الفحص المحجوزة</h3>
-          <span class="cnt" id="bkCnt">0</span>
-          <span class="conn" id="conn"><i></i><span>محلي</span></span>
-        </div>
-        <div class="srch"><input id="bkQ" type="text" inputmode="tel" maxlength="10" placeholder="🔍 ابحث برقم الجوال" autocomplete="off" aria-label="ابحث عن موعد برقم الجوال" dir="ltr"></div>
-        <div id="bkList"><p class="empty">لا توجد مواعيد محجوزة الآن</p></div>
-        <button type="button" class="opt" id="bkAdd" style="justify-content:center">＋ حجز موعد</button>
-      </div>
+    <aside class="col colG" aria-live="polite">
       <div class="card">
         <svg class="gauge" viewBox="0 0 220 125" aria-hidden="true">
           <path d="M20 110 A90 90 0 0 1 56.7 37.5" fill="none" stroke="var(--vlow)" stroke-width="16"/>
@@ -253,17 +274,6 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <div class="action" id="action"></div>
         <ul class="why" id="why"></ul>
       </div>
-
-      <div class="card">
-        <h3>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--dx)" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="14" r="4"/><circle cx="17.5" cy="14" r="4"/><path d="M10.5 14h3M2.5 13L4 7M21.5 13L20 7"/></svg>
-          المشكلة المتوقعة في النظر
-        </h3>
-        <div class="dx" id="dx"><p class="empty">اختر الأعراض في سؤال الشكوى ليظهر التوقع</p></div>
-        <div class="addons" id="addons"></div>
-        <p class="note">توقع مبدئي يساعدك تجهز العرض، والفحص هو الذي يحدد المقاس.</p>
-      </div>
-
       <button class="new" id="newBtn" type="button">
         <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
         عميل جديد
@@ -275,6 +285,44 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <span><i style="background:var(--vlow)"></i>ضعيفة جدًا أقل من ٢٥٪</span>
       </div>
     </aside>
+    <aside class="col colB">
+      <div class="card bk" id="bkCard">
+        <div class="head">
+          <h3>📅 مواعيد الفحص المحجوزة</h3>
+          <span class="cnt" id="bkCnt">0</span>
+          <span class="conn" id="conn"><i></i><span>محلي</span></span>
+        </div>
+        <div class="srch"><input id="bkQ" type="text" inputmode="tel" maxlength="10" placeholder="🔍 ابحث برقم الجوال" autocomplete="off" aria-label="ابحث عن موعد برقم الجوال" dir="ltr"></div>
+        <div id="bkList"><p class="empty">لا توجد مواعيد محجوزة الآن</p></div>
+        <button type="button" class="opt" id="bkAdd" style="justify-content:center">＋ حجز موعد</button>
+      </div>
+      <div class="card">
+        <h3>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--dx)" stroke-width="2" stroke-linecap="round"><circle cx="6.5" cy="14" r="4"/><circle cx="17.5" cy="14" r="4"/><path d="M10.5 14h3M2.5 13L4 7M21.5 13L20 7"/></svg>
+          المشكلة المتوقعة في النظر
+        </h3>
+        <div class="dx" id="dx"><p class="empty">اختر الأعراض في سؤال الشكوى ليظهر التوقع</p></div>
+        <div class="addons" id="addons"></div>
+        <p class="note">توقع مبدئي يساعدك تجهز العرض، والفحص هو الذي يحدد المقاس.</p>
+      </div>
+    </aside>
+    <section class="qs" id="qs" aria-label="الأسئلة">
+      <div class="q" id="q-age">
+        <div class="qhead"><span class="qnum">1</span>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>
+          <h2 class="qt"><label for="age">كم عمر العميل؟</label></h2>
+        </div>
+        <div class="agerow">
+          <input class="age" id="age" type="text" inputmode="numeric" maxlength="3" placeholder="٠٠" autocomplete="off">
+          <span class="agetag" id="agetag">اكتب العمر بالأرقام</span>
+        </div>
+        <div class="guard" id="guard" hidden>
+          <span class="lbl">معه أحد من أهله؟</span>
+          <button type="button" class="opt" id="g-yes" aria-pressed="false"><span class="dot"></span>نعم</button>
+          <button type="button" class="opt" id="g-no" aria-pressed="false"><span class="dot"></span>لا، وحده</button>
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -418,6 +466,12 @@ QUESTIONS.forEach(q => {
   });
   qs.appendChild(box);
 });
+
+{ const c1 = document.createElement('div'), c2 = document.createElement('div');
+  c1.className = c2.className = 'qcol';
+  ['age','sym','why'].forEach(id => c1.appendChild(document.getElementById('q-' + id)));
+  ['cur','ins','buy'].forEach(id => c2.appendChild(document.getElementById('q-' + id)));
+  qs.append(c1, c2); }
 
 function pick(q, j){
   if (q.multi){
@@ -595,8 +649,8 @@ function renderDefer(p){
   if (h >= 18) L.push(['الوقت زحمة', 'أفضل وقت للفحص الصبح، يكون هادي وناخذ راحتنا معك، أحجز لك بكرة؟']);
   else L.push(['خذ رقمه', 'الفحص ياخذ وقته عشان يطلع دقيق، أسجّل رقمك ونكلمك أول ما يفضى الدكتور؟']);
   el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعد بعد ساعة</button>' +
-    '<h4>🕐 أجّله بلطف</h4>' +
-    L.slice(0, 3).map(x => `<div class="line"><small>${x[0]}</small>«${x[1]}»</div>`).join('') +
+    '<details class="dd"><summary><h4>🕐 جمل التأجيل بلطف</h4></summary>' +
+    L.slice(0, 3).map(x => `<div class="line"><small>${x[0]}</small>«${x[1]}»</div>`).join('') + '</details>' +
     '<div class="no">🚫 لا تكذب عليه، مثل أن تقول إن الجهاز معطّل أو الدكتور غير موجود.</div>';
 }
 
