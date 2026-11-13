@@ -205,15 +205,18 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
   .panel{position:static}
   .qs{display:flex;flex-direction:column;gap:10px}
   .qcol{display:contents}
-  .q{display:grid;grid-template-columns:200px minmax(0,1fr);align-items:center;gap:6px 12px;padding:10px 12px}
+  .qs{gap:12px}
+  .q{display:grid;grid-template-columns:230px minmax(0,1fr);align-items:center;gap:8px 14px;padding:13px 16px}
   .q .qhead{margin:0}
+  .q .qt{font-size:1.2rem}
   .q .tipbox,.q .guard{grid-column:1 / -1}
-  .q .opts{grid-template-columns:repeat(auto-fit,minmax(105px,1fr))}
-  .q .hint{font-size:.72rem}
+  .q .opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+  .q .opt{flex:0 0 auto;min-width:130px;font-size:1.02rem;padding:10px 16px;white-space:nowrap}
+  .q .hint{font-size:.78rem}
+  .q .age{font-size:1.5rem;width:120px}
+  .q .agetag{font-size:.95rem}
   .q{padding:10px 12px}
   .qhead{margin-bottom:8px}
-  .opts{grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:6px}
-  .opt{padding:7px 10px;font-size:.88rem}
   .card{padding:12px;gap:9px}
   .gauge{max-width:210px}
   .pct{font-size:2.1rem}
