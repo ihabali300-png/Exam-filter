@@ -303,13 +303,6 @@ const ICONS = {
 /* p = نقاط الشراء، tag = سبب يظهر تحت النتيجة
    d = أوزان التشخيص: M قصر نظر، H طول نظر، A استجماتيزم، P قراءة (شيخوخي)، S إجهاد شاشات، N قيادة ليلية */
 const QUESTIONS = [
-  {id:'why', icon:'eye', t:'سبب الزيارة؟', o:[
-    {l:'نظارته انكسرت أو ضاعت', p:30, tag:'يحتاج نظارة الآن'},
-    {l:'يشتكي من نظره', p:18, tag:'عنده شكوى'},
-    {l:'يريد تجديد نظارته', p:15, tag:'يريد التجديد'},
-    {l:'فحص فقط لأنه مجاني', p:-12, tag:'جاء للفحص المجاني'},
-    {l:'ينتظر شخصًا أو يتفرج', p:-25, tag:'لم يأتِ للشراء'}
-  ]},
   {id:'sym', icon:'pulse', multi:true, dx:true, t:'ماذا يشتكي؟', hint:'اختر كل ما ينطبق', o:[
     {l:'البعيد غير واضح', d:{M:3}},
     {l:'يضيّق عينيه ليرى البعيد', d:{M:2,A:1}},
@@ -319,6 +312,13 @@ const QUESTIONS = [
     {l:'هالات حول الأنوار ليلًا', d:{A:2,M:1,N:3}},
     {l:'تعب وجفاف مع الشاشات', d:{S:3,H:1}},
     {l:'لا يشتكي من شيء', none:true}
+  ]},
+  {id:'why', icon:'eye', t:'سبب الزيارة؟', o:[
+    {l:'نظارته انكسرت أو ضاعت', p:30, tag:'يحتاج نظارة الآن'},
+    {l:'يشتكي من نظره', p:18, tag:'عنده شكوى'},
+    {l:'يريد تجديد نظارته', p:15, tag:'يريد التجديد'},
+    {l:'فحص فقط لأنه مجاني', p:-12, tag:'جاء للفحص المجاني'},
+    {l:'ينتظر شخصًا أو يتفرج', p:-25, tag:'لم يأتِ للشراء'}
   ]},
   {id:'cur', icon:'glasses', t:'نظارته الحالية؟', o:[
     {l:'عمرها سنتان أو أكثر', p:10, tag:'نظارة قديمة'},
@@ -475,8 +475,8 @@ function score(){
 
 function diagnose(){
   const v = ans.sym, sc = {M:0,H:0,A:0,P:0,S:0,N:0};
-  if (v) [...v].forEach(k => { const d = QUESTIONS[1].o[k].d || {}; for (const x in d) sc[x] += d[x]; });
-  const any = v && [...v].some(k => !QUESTIONS[1].o[k].none);
+  if (v) [...v].forEach(k => { const d = QUESTIONS.find(q => q.id === 'sym').o[k].d || {}; for (const x in d) sc[x] += d[x]; });
+  const any = v && [...v].some(k => !QUESTIONS.find(q => q.id === 'sym').o[k].none);
   if (age !== null){
     if (age >= 40){ sc.P += any ? 2 : 0; sc.H = Math.max(0, sc.H - 1); if (age >= 45) sc.P += 2; }
     else { sc.H += sc.P; sc.P = 0; }  // تحت الأربعين: صعوبة القريب غالبًا طول نظر
@@ -541,7 +541,7 @@ function render(){
 /* التأجيل بلطف: يظهر فقط للاحتمالية الضعيفة، ويختار الجمل حسب حالة العميل والوقت */
 function renderDefer(p){
   const el = document.getElementById('defer');
-  const sym = ans.sym, realSym = sym && [...sym].some(k => !QUESTIONS[1].o[k].none);
+  const sym = ans.sym, realSym = sym && [...sym].some(k => !QUESTIONS.find(q => q.id === 'sym').o[k].none);
   const needy = ans.why === 0 || ans.why === 1 || realSym;
   el.classList.remove('must');
   if (p >= 45){ el.hidden = true; return; }
