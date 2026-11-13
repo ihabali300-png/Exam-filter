@@ -124,7 +124,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .defer .line{background:var(--bg);border-radius:8px;padding:6px 10px}
 .defer .line small{display:block;color:var(--muted);font-size:.76rem}
 .defer .no{color:var(--low);font-size:.8rem}
-.bookbtn{font:inherit;font-family:var(--display);font-weight:800;background:var(--low);color:#fff;border:0;border-radius:10px;padding:10px;cursor:pointer;font-size:1rem}
+.bookbtn{animation:blinkR 1.4s ease-in-out infinite;font:inherit;font-family:var(--display);font-weight:800;background:var(--low);color:#fff;border:0;border-radius:10px;padding:10px;cursor:pointer;font-size:1rem}
 .bookbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .bk{display:flex;flex-direction:column;gap:8px}
 .bk .head{display:flex;align-items:center;gap:8px}
@@ -157,12 +157,13 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-weight:600;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:90vw;text-align:center}
 .toast[hidden]{display:none}
 .bar .bb{font-size:.82rem;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:2px 8px;flex:none}
+@keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
 .tipbox[hidden]{display:none}
 .tipbox b{font-family:var(--display)}
 .tipbox q{display:block;font-weight:600;quotes:"«" "»"}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn{animation:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn{animation:none}}
 </style>
 </head>
 <body>
@@ -227,9 +228,9 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <div class="pct" id="pct">—</div>
         <div class="tier" id="tier">ابدأ بالعمر</div>
         <div class="progress" id="prog"></div>
+        <div class="defer" id="defer" hidden></div>
         <div class="action" id="action"></div>
         <ul class="why" id="why"></ul>
-        <div class="defer" id="defer" hidden></div>
       </div>
 
       <div class="card">
@@ -554,9 +555,9 @@ function renderDefer(p){
   L.push(['موعد بعد ساعة', 'عندنا فحوصات قبلك، تحب نحجز لك موعد بعد ساعة إن شاء الله؟']);
   if (h >= 18) L.push(['الوقت زحمة', 'أفضل وقت للفحص الصبح، يكون هادي وناخذ راحتنا معك، أحجز لك بكرة؟']);
   else L.push(['خذ رقمه', 'الفحص ياخذ وقته عشان يطلع دقيق، أسجّل رقمك ونكلمك أول ما يفضى الدكتور؟']);
-  el.innerHTML = '<h4>🕐 أجّله بلطف</h4>' +
+  el.innerHTML = '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعد بعد ساعة</button>' +
+    '<h4>🕐 أجّله بلطف</h4>' +
     L.slice(0, 3).map(x => `<div class="line"><small>${x[0]}</small>«${x[1]}»</div>`).join('') +
-    '<button type="button" class="bookbtn" onclick="openBook()">📅 احجز له موعد بعد ساعة</button>' +
     '<div class="no">🚫 لا تكذب عليه، مثل أن تقول إن الجهاز معطّل أو الدكتور غير موجود.</div>';
 }
 
