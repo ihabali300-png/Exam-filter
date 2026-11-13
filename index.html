@@ -490,7 +490,7 @@ QUESTIONS.forEach(q => {
 function pick(q, j){
   if (q.multi){
     const s = ans[q.id] || new Set();
-    if (q.o[j].none){ s.clear(); s.add(j); }
+    if (q.o[j].none){ const had = s.has(j); s.clear(); if (!had) s.add(j); }
     else {
       q.o.forEach((o,k) => { if (o.none) s.delete(k); });
       s.has(j) ? s.delete(j) : s.add(j);
