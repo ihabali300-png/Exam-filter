@@ -191,6 +191,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 /* ===== تخطيط شاشة واحدة بدون نزول ===== */
 .col{display:flex;flex-direction:column;gap:12px;min-width:0}
 .qcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.q.todo{border-color:var(--mid);box-shadow:inset 0 0 0 1px var(--mid)}
 .dd summary{cursor:pointer;list-style:none;display:flex;align-items:center}
 .dd summary::-webkit-details-marker{display:none}
 .dd summary h4::after{content:" ▾";color:var(--muted)}
@@ -587,15 +588,17 @@ function render(){
   const bt = document.getElementById('bt');
   document.getElementById('prog').textContent = `أجبت ${n} من ${total}`;
 
-  if (n === 0){
-    pctEl.textContent = '—'; pctEl.style.color = ''; tierEl.textContent = 'ابدأ بالعمر'; tierEl.style.background = 'var(--muted)';
+  const complete = n === total && (age > 18 || guard !== null);
+  document.querySelectorAll('.q').forEach(el => el.classList.toggle('todo', n > 0 && !complete && !el.hidden && !el.classList.contains('done')));
+  if (!complete){
+    pctEl.textContent = '—'; pctEl.style.color = ''; tierEl.textContent = n ? `أكمل الأسئلة: باقي ${total - n + (n === total ? 1 : 0)}` : 'ابدأ بالعمر'; tierEl.style.background = 'var(--muted)';
     document.getElementById('needle').style.transform = 'rotate(0deg)';
-    document.getElementById('action').innerHTML = '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تتحدث مباشرة.';
+    document.getElementById('action').innerHTML = n ? '<b>النتيجة تظهر بعد إجابة كل الأسئلة.</b> الأسئلة الباقية عليها إطار برتقالي.' : '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تظهر بعد آخر سؤال.';
     document.getElementById('why').innerHTML = '';
     document.getElementById('defer').hidden = true;
     document.getElementById('decide').hidden = true;
     unsuitable = false; setMain();
-    document.getElementById('bp').textContent = '—'; bt.textContent = 'ابدأ'; bt.style.background = 'var(--muted)';
+    document.getElementById('bp').textContent = '—'; bt.textContent = n ? 'أكمل الأسئلة' : 'ابدأ'; bt.style.background = 'var(--muted)';
   } else {
     const r = score(), t = TIERS.find(x => r.p >= x.min);
     pctEl.textContent = r.p + '٪'; pctEl.style.color = `var(${t.c})`;
