@@ -186,18 +186,14 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .tipbox[hidden]{display:none}
 .tipbox b{font-family:var(--display)}
 .tipbox q{display:block;font-weight:600;quotes:"«" "»"}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn,.new.big.book,.q.next{animation:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn,.new.big.book{animation:none}}
 
 /* ===== تخطيط شاشة واحدة بدون نزول ===== */
 .col{display:flex;flex-direction:column;gap:12px;min-width:0}
 .qcol{display:flex;flex-direction:column;gap:12px;min-width:0}
-.q{transition:opacity .25s,border-color .25s,box-shadow .25s}
-.q:not(.done){border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.q.dxq:not(.done){border-color:var(--dx);box-shadow:0 0 0 3px var(--dx-soft)}
-.q.done{opacity:.45;box-shadow:none;border-color:var(--line)}
-.q.done:hover,.q.done:focus-within{opacity:.85}
-.q.next{animation:qglow 1.6s ease-in-out infinite}
-@keyframes qglow{0%,100%{box-shadow:0 0 0 3px var(--accent-soft)}50%{box-shadow:0 0 0 7px var(--accent-soft)}}
+.q{transition:opacity .25s,background .25s,filter .25s}
+.q.done{background:#8e959d;border-color:#7d848c;filter:grayscale(1);opacity:.4}
+.q.done .opt,.q.done .opt[aria-pressed="true"],.q.done .age,.q.done .agetag,.q.done .qnum{background:transparent;border-color:#6f767e;color:#2b3036}
 .dd summary{cursor:pointer;list-style:none;display:flex;align-items:center}
 .dd summary::-webkit-details-marker{display:none}
 .dd summary h4::after{content:" ▾";color:var(--muted)}
@@ -599,7 +595,7 @@ function render(){
   if (!complete){
     pctEl.textContent = '—'; pctEl.style.color = ''; tierEl.textContent = n ? `أكمل الأسئلة: باقي ${total - n + (n === total ? 1 : 0)}` : 'ابدأ بالعمر'; tierEl.style.background = 'var(--muted)';
     document.getElementById('needle').style.transform = 'rotate(0deg)';
-    document.getElementById('action').innerHTML = n ? '<b>النتيجة تظهر بعد إجابة كل الأسئلة.</b> السؤال المضيء هو التالي، والذي أجبت عنه يخفت.' : '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تظهر بعد آخر سؤال.';
+    document.getElementById('action').innerHTML = n ? '<b>النتيجة تظهر بعد إجابة كل الأسئلة.</b> السؤال الذي أجبت عنه يصبح رماديًا.' : '<b>طريقة الاستخدام:</b> اسأل العميل أثناء أخذ بياناته واختر الإجابة، والنتيجة تظهر بعد آخر سؤال.';
     document.getElementById('why').innerHTML = '';
     document.getElementById('defer').hidden = true;
     document.getElementById('decide').hidden = true;
