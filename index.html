@@ -102,6 +102,10 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .note{font-size:.78rem;color:var(--muted);margin:0}
 .new{font:inherit;font-family:var(--display);font-weight:800;font-size:1.1rem;background:var(--accent);color:#fff;border:0;border-radius:12px;padding:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .new:hover{filter:brightness(1.08)}
+.new.big{font-size:1.35rem;padding:12px 34px;min-width:260px;border-radius:14px;margin-inline-start:28px;box-shadow:0 6px 18px rgba(36,87,214,.25)}
+.new.big.book{background:var(--vlow);animation:blinkR 1.4s ease-in-out infinite;box-shadow:none}
+@media (max-width:859px){ .new.big{display:none} }
+
 .new:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .legend{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.78rem;color:var(--muted)}
 .legend span{display:flex;align-items:center;gap:6px}
@@ -182,7 +186,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .tipbox[hidden]{display:none}
 .tipbox b{font-family:var(--display)}
 .tipbox q{display:block;font-weight:600;quotes:"«" "»"}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn{animation:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn,.new.big.book{animation:none}}
 
 /* ===== تخطيط شاشة واحدة بدون نزول ===== */
 .col{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -257,6 +261,10 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
       <h1>مساعد الفحص</h1>
       <p class="sub">تنظيم الفحص والمواعيد</p>
     </div>
+    <button class="new big" id="newBtn" type="button" aria-live="polite">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <span id="newTxt">عميل جديد</span>
+    </button>
     <span class="sig" dir="ltr">Designed by Ihab</span>
   </header>
 
@@ -284,10 +292,6 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <div class="action" id="action"></div>
         <ul class="why" id="why"></ul>
       </div>
-      <button class="new" id="newBtn" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
-        عميل جديد
-      </button>
       <div class="legend">
         <span><i style="background:var(--good)"></i>عالية ٧٠٪ فأكثر</span>
         <span><i style="background:var(--mid)"></i>متوسطة ٤٥–٦٩٪</span>
@@ -590,6 +594,7 @@ function render(){
     document.getElementById('why').innerHTML = '';
     document.getElementById('defer').hidden = true;
     document.getElementById('decide').hidden = true;
+    unsuitable = false; setMain();
     document.getElementById('bp').textContent = '—'; bt.textContent = 'ابدأ'; bt.style.background = 'var(--muted)';
   } else {
     const r = score(), t = TIERS.find(x => r.p >= x.min);
@@ -631,10 +636,19 @@ function render(){
 }
 
 /* التأجيل بلطف: يظهر فقط للاحتمالية الضعيفة، ويختار الجمل حسب حالة العميل والوقت */
+let unsuitable = false;
+function setMain(){
+  const b = document.getElementById('newBtn'), t = document.getElementById('newTxt');
+  const book = unsuitable && !bookedThis;
+  b.classList.toggle('book', book);
+  t.textContent = book ? '📅 احجز له موعد' : 'عميل جديد';
+  b.querySelector('svg').style.display = book ? 'none' : '';
+}
 function renderDefer(p){
   const el = document.getElementById('defer');
   const sym = ans.sym, realSym = sym && [...sym].some(k => !QUESTIONS.find(q => q.id === 'sym').o[k].none);
   const needy = ans.why === 0 || ans.why === 1;  // نظارته انكسرت أو يشتكي فعلًا
+  unsuitable = !needy && p < 25; setMain();
   const dc = document.getElementById('decide'); dc.hidden = false;
   const D = (c, t) => { dc.style.background = `var(${c})`; dc.textContent = t; };
   if (needy) D('--good', '✅ القرار: افحصه الآن، عنده حاجة فعلية');
@@ -782,7 +796,7 @@ document.getElementById('mForm').addEventListener('submit', e => {
   const b = {id: Date.now().toString(36), date, made: hm(new Date()), name, phone, time, status:'قادم',
              score: r ? r.p : '', tier: r ? TIERS.find(x => r.p >= x.min).name : ''};
   bookings.push(b); LS.set('bk', bookings);
-  bookedThis = true;
+  bookedThis = true; setMain();
   send({action:'book', ...b});
   closeBook(); renderBookings();
   toast(`✅ تم حجز موعد ${name} ${dayLabel(date)} الساعة ${fmt12(time)}`);
@@ -915,7 +929,7 @@ function reset(){
   window.scrollTo({top:0, behavior:'smooth'});
   setTimeout(() => ageEl.focus({preventScroll:true}), 300);
 }
-document.getElementById('newBtn').addEventListener('click', reset);
+document.getElementById('newBtn').addEventListener('click', () => (unsuitable && !bookedThis) ? openBook() : reset());
 document.getElementById('newBtn2').addEventListener('click', reset);
 sync();
 renderBookings();
