@@ -157,6 +157,9 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--card);padding:10px 18px;border-radius:12px;font-weight:600;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:90vw;text-align:center}
 .toast[hidden]{display:none}
 .bar .bb{font-size:.82rem;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:2px 8px;flex:none}
+.sig{margin-right:auto;align-self:flex-start;font-family:"Cairo",sans-serif;font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);opacity:.55;text-shadow:0 1px 0 rgba(255,255,255,.9),0 -1px 0 rgba(0,0,0,.18);white-space:nowrap}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sig{text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.8)}}
+:root[data-theme="dark"] .sig{text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.8)}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
@@ -181,6 +184,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
       <h1>فلتر عملاء الفحص المجاني</h1>
       <p class="sub">أسئلة سريعة تعطيك احتمالية الشراء والمشكلة المتوقعة في النظر</p>
     </div>
+    <span class="sig" dir="ltr">Designed by Ihab</span>
   </header>
 
   <div class="grid">
