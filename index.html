@@ -162,6 +162,13 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 :root[data-theme="dark"] .sig{text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.8)}
 .decide{color:#fff;font-family:var(--display);font-weight:800;text-align:center;border-radius:12px;padding:10px 12px;font-size:1.02rem;line-height:1.4}
 .decide[hidden]{display:none}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mbtn{font:inherit;font-weight:600;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:10px;padding:9px;cursor:pointer}
+.mbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:800}
+.mbtn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mwhen{font-family:var(--display);font-weight:800;text-align:center;background:var(--bg);border-radius:10px;padding:8px}
+.mwhen[hidden],.pick[hidden]{display:none}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
@@ -281,9 +288,19 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
     <label for="mPhone">رقم الجوال
       <input id="mPhone" type="text" inputmode="tel" maxlength="10" autocomplete="off" placeholder="05xxxxxxxx" dir="ltr">
     </label>
-    <label for="mTime">وقت الموعد
-      <input id="mTime" type="time">
-    </label>
+    <div class="mode" role="group" aria-label="نوع الموعد">
+      <button type="button" class="mbtn" id="mHour" aria-pressed="true">⏱ بعد ساعة</button>
+      <button type="button" class="mbtn" id="mPick" aria-pressed="false">📅 اختر موعدًا</button>
+    </div>
+    <div class="mwhen" id="mWhen"></div>
+    <div class="pick" id="pickBox" hidden>
+      <label for="mDate">التاريخ
+        <input id="mDate" type="date">
+      </label>
+      <label for="mTime">الوقت
+        <input id="mTime" type="time">
+      </label>
+    </div>
     <div class="grace">⏳ مدة السماح ١٥ دقيقة بعد الموعد، وبعدها يظهر الحجز «متأخر» فتتصل به أو تلغيه.</div>
     <div class="err" id="mErr"></div>
     <div class="row">
@@ -587,7 +604,7 @@ const LS = {
   get(k, f){ try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch(e){ return f; } },
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
-let bookings = LS.get('bk', []).filter(b => b.date === today());
+let bookings = LS.get('bk', []).filter(b => b.date >= today());
 let queue = LS.get('q', []);
 let bookedThis = false;
 
@@ -618,7 +635,7 @@ async function pull(){
   try {
     const j = await call({action:'bookings', date: today()});
     const pending = queue.filter(q => q.action === 'book').map(q => q.id);
-    const local = bookings.filter(b => pending.includes(b.id));
+    const local = bookings.filter(b => pending.includes(b.id) || b.date > today());
     bookings = j.rows.concat(local.filter(l => !j.rows.some(r => r.id === l.id)));
     LS.set('bk', bookings); setConn('on'); renderBookings();
   } catch(e){ setConn('err'); }
@@ -637,11 +654,27 @@ function openBook(){
   document.getElementById('mName').value = '';
   document.getElementById('mPhone').value = '';
   document.getElementById('mTime').value = hm(d);
+  document.getElementById('mDate').value = dstr(d);
+  document.getElementById('mDate').min = today();
+  setMode('hour');
   document.getElementById('mErr').textContent = '';
   modal.hidden = false;
   setTimeout(() => document.getElementById('mName').focus(), 50);
 }
 function closeBook(){ modal.hidden = true; }
+let mode = 'hour';
+function hourSlot(){ const d = new Date(Date.now() + 60*60000); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return d; }
+function setMode(m){
+  mode = m;
+  document.getElementById('mHour').setAttribute('aria-pressed', m === 'hour');
+  document.getElementById('mPick').setAttribute('aria-pressed', m === 'pick');
+  document.getElementById('pickBox').hidden = m !== 'pick';
+  const w = document.getElementById('mWhen');
+  if (m === 'hour'){ const d = hourSlot(); w.hidden = false; w.textContent = `الموعد: ${dayLabel(dstr(d))} الساعة ${fmt12(hm(d))}`; }
+  else w.hidden = true;
+}
+document.getElementById('mHour').addEventListener('click', () => setMode('hour'));
+document.getElementById('mPick').addEventListener('click', () => setMode('pick'));
 document.getElementById('mCancel').addEventListener('click', closeBook);
 modal.addEventListener('click', e => { if (e.target === modal) closeBook(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeBook(); });
@@ -652,19 +685,21 @@ document.getElementById('mForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = document.getElementById('mName').value.trim();
   const phone = document.getElementById('mPhone').value.trim();
-  const time = document.getElementById('mTime').value;
+  let time = document.getElementById('mTime').value, date = document.getElementById('mDate').value;
+  if (mode === 'hour'){ const d = hourSlot(); time = hm(d); date = dstr(d); }
   const err = document.getElementById('mErr');
   if (!name) return err.textContent = 'اكتب اسم العميل';
   if (!/^05\d{8}$/.test(phone)) return err.textContent = 'رقم الجوال لازم يبدأ بـ 05 ويكون ١٠ أرقام';
-  if (!time) return err.textContent = 'اختر وقت الموعد';
+  if (!date || !time) return err.textContent = 'اختر التاريخ والوقت';
+  if (new Date(date + 'T' + time) < new Date(Date.now() - 60000)) return err.textContent = 'الموعد في وقت فات، اختر وقتًا قادمًا';
   const r = Object.keys(ans).length || age !== null ? score() : null;
-  const b = {id: Date.now().toString(36), date: today(), made: hm(new Date()), name, phone, time, status:'قادم',
+  const b = {id: Date.now().toString(36), date, made: hm(new Date()), name, phone, time, status:'قادم',
              score: r ? r.p : '', tier: r ? TIERS.find(x => r.p >= x.min).name : ''};
   bookings.push(b); LS.set('bk', bookings);
   bookedThis = true;
   send({action:'book', ...b});
   closeBook(); renderBookings();
-  toast(`✅ تم حجز موعد ${name} الساعة ${fmt12(time)}`);
+  toast(`✅ تم حجز موعد ${name} ${dayLabel(date)} الساعة ${fmt12(time)}`);
 });
 
 function fmt12(t){
@@ -672,10 +707,13 @@ function fmt12(t){
   const s = h >= 12 ? 'م' : 'ص'; h = h % 12 || 12;
   return `${h}:${String(m).padStart(2,'0')} ${s}`;
 }
-function minsTo(t){
-  const [h, m] = t.split(':').map(Number);
-  const d = new Date(); d.setHours(h, m, 0, 0);
-  return Math.round((d - Date.now()) / 60000);
+function minsTo(b){ return Math.round((new Date(b.date + 'T' + b.time) - Date.now()) / 60000); }
+function dstr(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function dayLabel(ds){
+  const t = new Date(); const tm = new Date(Date.now() + 864e5);
+  if (ds === dstr(t)) return 'اليوم';
+  if (ds === dstr(tm)) return 'بكرة';
+  const [y, mo, da] = ds.split('-'); return `يوم ${+da}/${+mo}`;
 }
 function setStatus(id, status){
   const b = bookings.find(x => x.id === id); if (!b) return;
@@ -687,22 +725,23 @@ function setStatus(id, status){
 
 let alerted = {};
 function renderBookings(){
-  const act = bookings.filter(b => b.status === 'قادم').sort((a, b) => a.time.localeCompare(b.time));
+  const act = bookings.filter(b => b.status === 'قادم').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   document.getElementById('bkCnt').textContent = act.length;
   const bb = document.getElementById('bb');
   bb.hidden = !act.length; bb.textContent = '📅 ' + act.length;
   const list = document.getElementById('bkList');
   if (!act.length){ list.innerHTML = '<p class="empty">لا توجد مواعيد محجوزة الآن</p>'; return; }
   list.innerHTML = act.map(b => {
-    const m = minsTo(b.time);
+    const m = minsTo(b);
     let st, c, due = false;
-    if (m > 10){ st = `بعد ${m >= 60 ? Math.floor(m/60) + ' س ' : ''}${m % 60} د`; c = '--accent'; }
+    if (b.date > today()){ st = 'موعد قادم'; c = '--accent'; }
+    else if (m > 10){ st = `بعد ${m >= 60 ? Math.floor(m/60) + ' س ' : ''}${m % 60} د`; c = '--accent'; }
     else if (m > 0){ st = `قريب، بعد ${m} د`; c = '--mid'; due = true; }
     else if (m >= -GRACE){ st = `حان موعده، باقي ${GRACE + m} د سماح`; c = '--mid'; due = true; }
     else { st = 'متأخر، انتهى السماح'; c = '--vlow'; due = true; }
     if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}`); }
     return `<div class="bkrow${due ? ' due' : ''}">
-      <span class="nm">${b.name.replace(/</g,'&lt;')}</span><span class="tm">${fmt12(b.time)}</span>
+      <span class="nm">${b.name.replace(/</g,'&lt;')}</span><span class="tm">${b.date !== today() ? dayLabel(b.date) + " " : ""}${fmt12(b.time)}</span>
       <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span>
       <div class="acts" style="grid-column:1 / -1">
         <button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
