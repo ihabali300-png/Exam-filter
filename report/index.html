@@ -3,150 +3,340 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>التقرير اليومي – تبوك بارك</title>
+<title>تبوك بارك – الحماس والتقفيلة</title>
 <style>
-  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mut:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--blue:#38bdf8}
+  :root{--bg:#0b1020;--card:#151c33;--line:#2a3558;--txt:#f1f5f9;--mut:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--blue:#38bdf8;--gold:#facc15;--pink:#ec4899}
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--txt);padding:16px;display:flex;justify-content:center}
-  .wrap{width:100%;max-width:440px}
+  body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--txt);padding:14px;display:flex;justify-content:center;overflow-x:hidden;transition:background 1s}
+  .wrap{width:100%;max-width:520px;position:relative;z-index:2}
+  /* tabs */
+  .tabs{display:flex;gap:10px;margin-bottom:14px}
+  .tab{flex:1;border:0;border-radius:14px;padding:14px;font-size:17px;font-weight:800;cursor:pointer;color:var(--txt);background:var(--card);border:1px solid var(--line)}
+  .tab.on{background:linear-gradient(135deg,#f97316,#ec4899);border-color:transparent;box-shadow:0 0 18px #ec489988}
+  .tab.rep.on{background:linear-gradient(135deg,#0ea5e9,#22c55e);box-shadow:0 0 18px #22c55e88}
+  .pane{display:none}.pane.on{display:block}
   h1{font-size:20px;margin:0 0 4px}
   .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
-  .row{display:flex;gap:10px;margin-bottom:10px}
-  .row:last-child{margin-bottom:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  .row{display:flex;gap:10px;margin-bottom:10px}.row:last-child{margin-bottom:0}
   .f{flex:1;display:flex;flex-direction:column;gap:4px}
   label{font-size:13px;color:var(--mut)}
-  input{width:100%;background:#0b1222;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:17px;text-align:center;direction:ltr}
+  input{width:100%;background:#0a0f1f;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:17px;text-align:center;direction:ltr}
   input:focus{outline:none;border-color:var(--blue)}
   .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .k{background:#0b1222;border-radius:10px;padding:10px 6px;text-align:center}
-  .k b{display:block;font-size:20px;direction:ltr}
-  .k span{font-size:12px;color:var(--mut)}
-  .bar{height:10px;background:#0b1222;border-radius:6px;overflow:hidden;margin-top:12px}
-  .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+  .k{background:#0a0f1f;border-radius:10px;padding:10px 6px;text-align:center}
+  .k b{display:block;font-size:20px;direction:ltr}.k span{font-size:12px;color:var(--mut)}
+  .bar{height:10px;background:#0a0f1f;border-radius:6px;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .4s}
   .note{font-size:13px;color:var(--mut);margin-top:8px;text-align:center}
-  pre{background:#0b1222;border-radius:10px;padding:12px;margin:0;font-family:inherit;font-size:15px;direction:ltr;text-align:left;white-space:pre-wrap}
-  .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px}
-  .chk input{width:auto}
+  pre{background:#0a0f1f;border-radius:10px;padding:12px;margin:0;font-family:inherit;font-size:15px;direction:ltr;text-align:left;white-space:pre-wrap}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px}.chk input{width:auto}
   .btns{display:flex;gap:10px}
-  button{flex:1;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
-  .wa{background:#25d366;color:#04210f}
-  .cp{background:var(--line);color:var(--txt)}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.3s}
+  button{font-family:inherit}
+  .big{flex:1;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:800;cursor:pointer}
+  .wa{background:#25d366;color:#04210f}.cp{background:var(--line);color:var(--txt)}
+
+  /* ===== HYPE ===== */
+  .stage{font-size:15px;font-weight:800;text-align:center;letter-spacing:.5px;margin-bottom:6px}
+  .gaugeBox{position:relative;width:min(300px,78vw);aspect-ratio:1;margin:4px auto 6px}
+  .gaugeBox svg{width:100%;height:100%;transform:rotate(-90deg);filter:drop-shadow(0 0 14px var(--glow,#38bdf8))}
+  .gaugeBox .ring{transition:stroke-dashoffset 1s cubic-bezier(.2,1.4,.4,1),stroke .6s}
+  .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .pct{font-size:clamp(46px,15vw,70px);font-weight:900;line-height:1;direction:ltr}
+  .center small{color:var(--mut);font-size:13px;margin-top:4px}
+  .center .em{font-size:38px;animation:bob 1.2s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-8px) scale(1.1)}}
+  .shout{min-height:64px;text-align:center;font-size:clamp(19px,5.5vw,24px);font-weight:900;padding:6px 4px;
+    background:linear-gradient(90deg,#facc15,#f97316,#ec4899,#8b5cf6,#facc15);background-size:300%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 4s linear infinite}
+  @keyframes flow{to{background-position:300%}}
+  .shout.pop{animation:flow 4s linear infinite,pop .6s}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+  .st{background:#0a0f1f;border-radius:12px;padding:10px 4px;text-align:center}
+  .st b{display:block;font-size:19px;direction:ltr}.st span{font-size:12px;color:var(--mut)}
+  /* milestones */
+  .miles{display:flex;justify-content:space-between;margin:14px 2px 2px;position:relative}
+  .miles:before{content:"";position:absolute;top:50%;left:8px;right:8px;height:4px;background:#0a0f1f;border-radius:4px;transform:translateY(-50%)}
+  .ms{position:relative;width:46px;height:46px;border-radius:50%;background:#0a0f1f;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;filter:grayscale(1) brightness(.6);transition:.4s}
+  .ms em{position:absolute;bottom:-18px;font-size:11px;font-style:normal;color:var(--mut)}
+  .ms.done{filter:none;border-color:var(--gold);box-shadow:0 0 14px var(--gold);animation:glow 1.6s ease-in-out infinite}
+  @keyframes glow{50%{box-shadow:0 0 26px var(--gold),0 0 6px #fff inset}}
+  /* add order */
+  .addRow{display:flex;gap:8px;margin-top:6px}
+  .addRow input{flex:1.2;font-size:20px}
+  .fire{flex:1;border:0;border-radius:14px;font-size:18px;font-weight:900;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,#f97316,#ef4444,#ec4899);background-size:200%;
+    animation:flash 1.4s ease-in-out infinite,flow 3s linear infinite;box-shadow:0 0 20px #f9731699}
+  @keyframes flash{50%{box-shadow:0 0 36px #f97316,0 0 10px #fff;transform:scale(1.04)}}
+  .fire:active{transform:scale(.94)}
+  .quick{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .q{flex:1;min-width:60px;border:1px solid var(--line);background:#0a0f1f;color:var(--txt);border-radius:10px;padding:9px 4px;font-size:14px;font-weight:700;cursor:pointer;direction:ltr}
+  .q:hover{border-color:var(--gold);box-shadow:0 0 10px #facc1566}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:10px}
+  .chip{background:#0a0f1f;border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:13px;direction:ltr;animation:pop .5s}
+  .tools{display:flex;gap:8px;margin-top:10px}
+  .tools button{flex:1;border:1px solid var(--line);background:transparent;color:var(--mut);border-radius:10px;padding:9px;font-size:13px;cursor:pointer}
+  /* overlay */
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:5}
+  .boom{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(circle,#0008,#000c);pointer-events:none}
+  .boom.on{display:flex;animation:fadeout 3.4s forwards}
+  .boom b{font-size:clamp(40px,13vw,80px);font-weight:900;text-align:center;color:#fff;text-shadow:0 0 20px #f97316,0 0 40px #ec4899;animation:pop .7s,shake .15s .7s 6}
+  .boom span{font-size:clamp(18px,5vw,26px);margin-top:10px;color:var(--gold);font-weight:800}
+  @keyframes shake{25%{transform:translate(4px,-3px) rotate(1deg)}75%{transform:translate(-4px,3px) rotate(-1deg)}}
+  @keyframes fadeout{0%,80%{opacity:1}100%{opacity:0}}
+  .flashBg{animation:bgflash .5s 3}
+  @keyframes bgflash{50%{background:#3b0a2a}}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;z-index:9}
   .toast.on{opacity:1}
+  .snd{position:absolute;top:0;left:0;background:transparent;border:0;font-size:22px;cursor:pointer}
 </style>
 </head>
 <body>
+<canvas id="fx"></canvas>
+<div class="boom" id="boom"><b id="boomT"></b><span id="boomS"></span></div>
+
 <div class="wrap">
-  <h1>📊 التقرير اليومي</h1>
-  <div class="sub">فرع تبوك بارك (TBK) — دخّل الأرقام واضغط إرسال</div>
+  <div class="tabs">
+    <button class="tab hyp" data-t="hype">🔥 الحماس</button>
+    <button class="tab rep" data-t="report">📊 تقفيلة نهاية اليوم</button>
+  </div>
 
-  <div class="card">
-    <div class="row">
-      <div class="f"><label>📅 التاريخ</label><input id="date" type="date"></div>
-      <div class="f"><label>🎯 التارجت</label><input id="target" type="number" inputmode="numeric"></div>
+  <!-- ================= HYPE ================= -->
+  <div class="pane" id="hype">
+    <div class="card" style="position:relative">
+      <button class="snd" id="snd" title="الصوت">🔊</button>
+      <div class="stage" id="stage">🚀 يلا نبدأ اليوم</div>
+      <div class="gaugeBox">
+        <svg viewBox="0 0 200 200">
+          <defs>
+            <linearGradient id="gr" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" id="g1" stop-color="#38bdf8"/><stop offset="1" id="g2" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+          <circle cx="100" cy="100" r="86" fill="none" stroke="#0a0f1f" stroke-width="16"/>
+          <circle class="ring" id="ring" cx="100" cy="100" r="86" fill="none" stroke="url(#gr)" stroke-width="16" stroke-linecap="round" stroke-dasharray="540.35" stroke-dashoffset="540.35"/>
+        </svg>
+        <div class="center">
+          <div class="em" id="em">😴</div>
+          <div class="pct" id="hp">0%</div>
+          <small id="hsales">0 من 0</small>
+        </div>
+      </div>
+      <div class="shout" id="shout">كل عميل داخل هو فرصة… يلا يا أبطال 💪</div>
+      <div class="miles" id="miles">
+        <div class="ms" data-p="25">🥉<em>25%</em></div>
+        <div class="ms" data-p="50">🥈<em>50%</em></div>
+        <div class="ms" data-p="75">🥇<em>75%</em></div>
+        <div class="ms" data-p="90">⚡<em>90%</em></div>
+        <div class="ms" data-p="100">🏆<em>100%</em></div>
+      </div>
+      <div style="height:16px"></div>
+      <div class="stats">
+        <div class="st"><b id="hrem">–</b><span>فاضل ريال</span></div>
+        <div class="st"><b id="hord">0</b><span>أوردرات</span></div>
+        <div class="st"><b id="hneed">–</b><span>أوردرات كمان</span></div>
+      </div>
     </div>
-    <div class="row">
-      <div class="f"><label>💰 المبيعات</label><input id="sales" type="number" inputmode="decimal"></div>
-      <div class="f"><label>📦 الأوردرات</label><input id="orders" type="number" inputmode="numeric"></div>
-    </div>
-    <div class="row">
-      <div class="f"><label>🚶 الزوار (Visitors)</label><input id="traffic" type="number" inputmode="numeric"></div>
-      <div class="f"><label>👓 الفحوصات (E.T)</label><input id="et" type="number" inputmode="numeric"></div>
+
+    <div class="card">
+      <label>💥 أوردر جديد؟ اكتب قيمته واضغط</label>
+      <div class="addRow">
+        <input id="amt" type="number" inputmode="decimal" placeholder="قيمة الأوردر">
+        <button class="fire" id="add">🔥 كسّر</button>
+      </div>
+      <div class="quick">
+        <button class="q" data-v="199">199</button>
+        <button class="q" data-v="349">349</button>
+        <button class="q" data-v="499">499</button>
+        <button class="q" data-v="799">799</button>
+        <button class="q" data-v="1200">1200</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="tools">
+        <button id="undo">↩️ تراجع عن آخر أوردر</button>
+        <button id="reset">🗑️ يوم جديد</button>
+      </div>
+      <div class="note">الأوردرات بتتنقل لوحدها لصفحة التقفيلة آخر اليوم</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="kpis">
-      <div class="k"><b id="atv">–</b><span>متوسط الفاتورة</span></div>
-      <div class="k"><b id="cr">–</b><span>نسبة التحويل</span></div>
-      <div class="k"><b id="ach">–</b><span>تحقيق التارجت</span></div>
+  <!-- ================= REPORT ================= -->
+  <div class="pane" id="report">
+    <h1>📊 تقفيلة نهاية اليوم</h1>
+    <div class="sub">فرع تبوك بارك — دخّل الأرقام واضغط إرسال</div>
+    <div class="card">
+      <div class="row">
+        <div class="f"><label>📅 التاريخ</label><input id="date" type="date"></div>
+        <div class="f"><label>🎯 التارجت</label><input id="target" type="number" inputmode="numeric"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label>💰 المبيعات</label><input id="sales" type="number" inputmode="decimal"></div>
+        <div class="f"><label>📦 الأوردرات</label><input id="orders" type="number" inputmode="numeric"></div>
+      </div>
+      <div class="row">
+        <div class="f"><label>🚶 الزوار</label><input id="traffic" type="number" inputmode="numeric"></div>
+        <div class="f"><label>👓 الفحوصات</label><input id="et" type="number" inputmode="numeric"></div>
+      </div>
     </div>
-    <div class="bar"><i id="barI"></i></div>
-    <div class="note" id="rem"></div>
-  </div>
-
-  <div class="card">
-    <pre id="msg"></pre>
-    <label class="chk"><input type="checkbox" id="extra"> إضافة نسبة التحويل والتحقيق للرسالة</label>
-  </div>
-
-  <div class="btns">
-    <button class="wa" id="send">📲 إرسال واتساب</button>
-    <button class="cp" id="copy">📋 نسخ</button>
+    <div class="card">
+      <div class="kpis">
+        <div class="k"><b id="atv">–</b><span>متوسط الفاتورة</span></div>
+        <div class="k"><b id="cr">–</b><span>نسبة التحويل</span></div>
+        <div class="k"><b id="ach">–</b><span>تحقيق التارجت</span></div>
+      </div>
+      <div class="bar"><i id="barI"></i></div>
+      <div class="note" id="rem"></div>
+    </div>
+    <div class="card">
+      <pre id="msg"></pre>
+      <label class="chk"><input type="checkbox" id="extra"> إضافة نسبة التحويل والتحقيق للرسالة</label>
+    </div>
+    <div class="btns">
+      <button class="big wa" id="send">📲 إرسال واتساب</button>
+      <button class="big cp" id="copy">📋 نسخ</button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-const $ = id => document.getElementById(id);
-const ids = ["date","target","sales","orders","traffic","et"];
-const store = {
-  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
-  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
-};
-
-// default date = yesterday if before 6am, else today
-(function(){
-  const d = new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1);
-  $("date").value = d.toISOString().slice(0,10);
-  const t = store.get("tbk_target"); if(t) $("target").value = t;
-  $("extra").checked = store.get("tbk_extra")==="1";
-})();
-
-function n(id){ const v=parseFloat($(id).value); return isNaN(v)?null:v; }
-function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-"); return `${d}-${m}-${y}`; }
-
-function build(){
-  const T=n("target"), S=n("sales"), O=n("orders"), V=n("traffic"), E=n("et");
-  const atv = (S!=null && O) ? Math.round(S/O) : null;
-  const cr  = (O!=null && V) ? (O/V*100) : null;
-  const ach = (S!=null && T) ? (S/T*100) : null;
-
-  $("atv").textContent = atv ?? "–";
-  $("cr").textContent  = cr!=null ? cr.toFixed(1)+"%" : "–";
-  $("ach").textContent = ach!=null ? Math.round(ach)+"%" : "–";
-  $("barI").style.width = Math.min(ach||0,100)+"%";
-  $("barI").style.background = ach==null?"var(--acc)":ach>=100?"var(--acc)":ach>=70?"var(--warn)":"var(--bad)";
-  $("rem").textContent = (T&&S!=null) ? (S>=T ? "✅ التارجت اتحقق" : `المتبقي للتارجت: ${Math.round(T-S)} ريال`) : "";
-
-  let lines = [
-    "TBK",
-    fmtDate($("date").value),
-    `Target:${T ?? ""}`,
-    `Sales: ${S ?? ""}`,
-    `Orders:${O ?? ""}`,
-    `Traffic:${V ?? ""}`,
-    `ATV: ${atv ?? ""}`,
-    `E.t :${E ?? ""}`
-  ];
-  if($("extra").checked){
-    lines.push(`CR: ${cr!=null?cr.toFixed(1)+"%":""}`);
-    lines.push(`Ach: ${ach!=null?Math.round(ach)+"%":""}`);
-  }
-  const msg = lines.join("\n");
-  $("msg").textContent = msg;
-  return msg;
-}
-
-ids.forEach(id=>$(id).addEventListener("input",()=>{
-  if(id==="target") store.set("tbk_target",$("target").value);
-  build();
-}));
-$("extra").addEventListener("change",()=>{store.set("tbk_extra",$("extra").checked?"1":"0");build();});
-
+const $=id=>document.getElementById(id);
+const S={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function bizDate(){const d=new Date();if(d.getHours()<6)d.setDate(d.getDate()-1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800);}
 
-$("send").onclick=()=>{
-  const msg=build();
-  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+/* ---------- tabs ---------- */
+function openTab(t){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("on",p.id===t));S.set("tbk_tab",t);
+  if(t==="report")syncToReport();}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>openTab(b.dataset.t));
+
+/* ---------- day state (orders list) ---------- */
+let day=JSON.parse(S.get("tbk_day")||"null");
+if(!day||day.date!==bizDate())day={date:bizDate(),list:[],hit:[]};
+function saveDay(){S.set("tbk_day",JSON.stringify(day));}
+const target=()=>parseFloat($("target").value)||0;
+const total=()=>day.list.reduce((a,b)=>a+b,0);
+
+/* ---------- sound ---------- */
+let soundOn=S.get("tbk_snd")!=="0";let ac;
+function beep(freqs,dur=.12,type="square",vol=.06){if(!soundOn)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  freqs.forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=vol;
+  o.connect(g);g.connect(ac.destination);const t=ac.currentTime+i*dur;o.start(t);g.gain.exponentialRampToValueAtTime(.0001,t+dur*1.6);o.stop(t+dur*1.7);});}catch(e){}}
+$("snd").textContent=soundOn?"🔊":"🔇";
+$("snd").onclick=()=>{soundOn=!soundOn;S.set("tbk_snd",soundOn?"1":"0");$("snd").textContent=soundOn?"🔊":"🔇";};
+
+/* ---------- particles ---------- */
+const cv=$("fx"),cx=cv.getContext("2d");let P=[];
+function rs(){cv.width=innerWidth;cv.height=innerHeight;}rs();addEventListener("resize",rs);
+const COLS=["#facc15","#f97316","#ec4899","#22c55e","#38bdf8","#8b5cf6","#fff"];
+function confetti(n=120,x=innerWidth/2,y=innerHeight*.35){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=4+Math.random()*9;
+  P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,g:.25,life:90+Math.random()*60,c:COLS[i%COLS.length],r:3+Math.random()*5,rot:Math.random()*6,sq:Math.random()<.5});}}
+function firework(){const x=innerWidth*(.15+Math.random()*.7),y=innerHeight*(.15+Math.random()*.35);
+  for(let i=0;i<70;i++){const a=i/70*Math.PI*2,s=3+Math.random()*4;P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:.06,life:70,c:COLS[Math.floor(Math.random()*COLS.length)],r:2.5,rot:0,sq:false});}beep([600+Math.random()*400],.05,"triangle",.04);}
+function emojiRain(em,n=24){for(let i=0;i<n;i++)P.push({x:Math.random()*innerWidth,y:-30-Math.random()*200,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,g:.05,life:220,em,r:22+Math.random()*16,rot:0});}
+(function loop(){cx.clearRect(0,0,cv.width,cv.height);P=P.filter(p=>p.life>0&&p.y<cv.height+60);
+  for(const p of P){p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.vx*=.99;p.life--;p.rot+=.1;cx.globalAlpha=Math.min(1,p.life/40);
+    if(p.em){cx.font=`${p.r}px serif`;cx.fillText(p.em,p.x,p.y);}
+    else{cx.fillStyle=p.c;cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);if(p.sq)cx.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6);else{cx.beginPath();cx.arc(0,0,p.r/2,0,7);cx.fill();}cx.restore();}}
+  cx.globalAlpha=1;requestAnimationFrame(loop);})();
+
+/* ---------- hype texts ---------- */
+const LINES={
+ 0:["كل عميل داخل هو فرصة… يلا يا أبطال 💪","أول أوردر بيفتح النفس 🔓","النهارده يومنا… مفيش حاجة اسمها مستحيل 🚀","ابتسامة + فحص + عرض قوي = بيعة 😎"],
+ 1:["بدأنا نسخّن 🔥 كمّلوا!","الماكينة اشتغلت… متوقفوش ⚙️","حلو أوي… العميل الجاي بتاعنا 🎯","خطوة خطوة بنوصل 👣"],
+ 2:["نص الطريق! الفريق ده مختلف 💥","إحنا في النص… والنص التاني أسهل 😤","كده الكلام… ارفعوا الفاتورة شوية 💎","الجو بقى نار 🔥🔥"],
+ 3:["قرّبنا جداً… محدش يهدّي دلوقتي ⚡","ريحة التارجت جاية 👃🏆","آخر شوية… كل أوردر بيفرق 💪","يا جماعة إحنا تقريباً هناك 🚀"],
+ 4:["ثواني ونكسّره!! 💣","أوردر واحد كمان ويولّع 🔥🔥🔥","التارجت بيترعش قدامنا 😂⚡","كله يدّي أقوى ما عنده دلوقتي 💥"],
+ 5:["كسّرناااااه!! 🏆🔥","الفريق ده أسطوري 👑","التارجت اتكسر… يلا على الرقم القياسي 🚀","عاش يا أبطال تبوك بارك 💪🎉"]
 };
-$("copy").onclick=async()=>{
-  const msg=build();
-  try{await navigator.clipboard.writeText(msg);toast("✅ اتنسخ");}
-  catch(e){const r=document.createRange();r.selectNode($("msg"));getSelection().removeAllRanges();getSelection().addRange(r);document.execCommand("copy");toast("✅ اتنسخ");}
-};
-build();
+const STAGES=[["😴","🚀 يلا نبدأ اليوم","#38bdf8","#8b5cf6","#0b1020"],["😏","🔥 بدأنا نسخّن","#22c55e","#38bdf8","#0b1424"],
+ ["😤","💥 نص الطريق","#facc15","#22c55e","#14140b"],["🤩","⚡ قرّبنا جداً","#f97316","#facc15","#1d1208"],
+ ["🥵","💣 على وشك الانفجار","#ef4444","#f97316","#230a0a"],["👑","🏆 كسّرناه!","#facc15","#ec4899","#22081c"]];
+function stageOf(p){return p>=100?5:p>=90?4:p>=75?3:p>=50?2:p>0?1:0;}
+let lastStage=-1,shoutTimer;
+function shout(st,force){const arr=LINES[st];const el=$("shout");el.textContent=arr[Math.floor(Math.random()*arr.length)];
+  el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
+function boom(t,s){$("boomT").textContent=t;$("boomS").textContent=s;const b=$("boom");b.classList.remove("on");void b.offsetWidth;b.classList.add("on");
+  document.body.classList.remove("flashBg");void document.body.offsetWidth;document.body.classList.add("flashBg");}
+
+/* ---------- render hype ---------- */
+function renderHype(fromAdd){
+  const T=target(),tot=total(),p=T?tot/T*100:0,st=stageOf(p),[em,label,c1,c2,bg]=STAGES[st];
+  $("ring").style.strokeDashoffset=540.35*(1-Math.min(p,100)/100);
+  $("g1").setAttribute("stop-color",c1);$("g2").setAttribute("stop-color",c2);
+  document.querySelector(".gaugeBox").style.setProperty("--glow",c1);
+  document.body.style.background=bg;
+  $("em").textContent=em;$("stage").textContent=label;$("stage").style.color=c1;
+  $("hp").textContent=Math.round(p)+"%";
+  $("hsales").textContent=`${Math.round(tot)} من ${T||"؟"}`;
+  const rem=Math.max(T-tot,0),n=day.list.length,atv=n?tot/n:0;
+  $("hrem").textContent=T?(rem?Math.round(rem):"✅"):"–";
+  $("hord").textContent=n;
+  $("hneed").textContent=T?(rem?(atv?Math.ceil(rem/atv):"؟"):"0"):"–";
+  document.querySelectorAll(".ms").forEach(m=>m.classList.toggle("done",p>=+m.dataset.p));
+  $("chips").innerHTML=day.list.map(v=>`<span class="chip">🔥 ${v}</span>`).join("");
+  if(st!==lastStage){shout(st);lastStage=st;}
+  // milestone celebrations
+  if(fromAdd&&T){
+    for(const m of [25,50,75,90,100]){
+      if(p>=m&&!day.hit.includes(m)){day.hit.push(m);saveDay();
+        if(m===100){boom("كسّرناه!! 🏆","التارجت اتكسر يا أبطال 🔥");emojiRain("🏆",18);emojiRain("🔥",18);
+          beep([523,659,784,1047,1319],.14,"square",.07);let k=0;const iv=setInterval(()=>{firework();if(++k>14)clearInterval(iv);},280);}
+        else{const t={25:["ربع التارجت! 🥉","البداية القوية"],50:["نص التارجت! 🥈","كمّلوا كده"],75:["75%! 🥇","قرّبنا أوي"],90:["90%! ⚡","أوردر أو اتنين ونكسّره"]}[m];
+          boom(t[0],t[1]);confetti(180);beep([523,659,784,1047],.12,"square",.06);}
+      }
+    }
+  }
+}
+
+/* ---------- add / undo / reset ---------- */
+function addOrder(v){v=parseFloat(v);if(!v||v<=0){toast("اكتب قيمة الأوردر");return;}
+  day.list.push(Math.round(v));saveDay();$("amt").value="";
+  const r=$("add").getBoundingClientRect();confetti(70,r.left+r.width/2,r.top);beep([440,660,880],.07,"square",.05);
+  if(navigator.vibrate)navigator.vibrate(60);
+  shout(stageOf(target()?total()/target()*100:0));
+  renderHype(true);syncToReport();}
+$("add").onclick=()=>addOrder($("amt").value);
+$("amt").addEventListener("keydown",e=>{if(e.key==="Enter")addOrder($("amt").value);});
+document.querySelectorAll(".q").forEach(b=>b.onclick=()=>addOrder(b.dataset.v));
+$("undo").onclick=()=>{if(!day.list.length)return;day.list.pop();
+  const p=target()?total()/target()*100:0;day.hit=day.hit.filter(m=>p>=m);saveDay();renderHype();syncToReport();toast("↩️ اتشال آخر أوردر");};
+$("reset").onclick=()=>{if(!day.list.length)return;const b=$("reset");
+  if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="⚠️ اضغط تاني للتأكيد";setTimeout(()=>{b.dataset.c="";b.textContent="🗑️ يوم جديد";},2500);return;}
+  day={date:bizDate(),list:[],hit:[]};saveDay();b.dataset.c="";b.textContent="🗑️ يوم جديد";renderHype();syncToReport();toast("بدأنا يوم جديد 🚀");};
+
+// rotate shout every 12s
+setInterval(()=>{if($("hype").classList.contains("on"))shout(stageOf(target()?total()/target()*100:0));},12000);
+
+/* ---------- report ---------- */
+$("date").value=bizDate();
+{const t=S.get("tbk_target");if(t)$("target").value=t;}
+$("extra").checked=S.get("tbk_extra")==="1";
+function syncToReport(){ if(day.list.length){ $("sales").value=Math.round(total()); $("orders").value=day.list.length; } build(); }
+function n(id){const v=parseFloat($(id).value);return isNaN(v)?null:v;}
+function fmtDate(v){if(!v)return"";const[y,m,d]=v.split("-");return`${d}-${m}-${y}`;}
+function build(){
+  const T=n("target"),Sa=n("sales"),O=n("orders"),V=n("traffic"),E=n("et");
+  const atv=(Sa!=null&&O)?Math.round(Sa/O):null,cr=(O!=null&&V)?O/V*100:null,ach=(Sa!=null&&T)?Sa/T*100:null;
+  $("atv").textContent=atv??"–";$("cr").textContent=cr!=null?cr.toFixed(1)+"%":"–";$("ach").textContent=ach!=null?Math.round(ach)+"%":"–";
+  $("barI").style.width=Math.min(ach||0,100)+"%";
+  $("barI").style.background=ach==null?"var(--acc)":ach>=100?"var(--acc)":ach>=70?"var(--warn)":"var(--bad)";
+  $("rem").textContent=(T&&Sa!=null)?(Sa>=T?"✅ التارجت اتحقق":`المتبقي للتارجت: ${Math.round(T-Sa)} ريال`):"";
+  const lines=["TBK",fmtDate($("date").value),`Target:${T??""}`,`Sales: ${Sa??""}`,`Orders:${O??""}`,`Traffic:${V??""}`,`ATV: ${atv??""}`,`E.t :${E??""}`];
+  if($("extra").checked){lines.push(`CR: ${cr!=null?cr.toFixed(1)+"%":""}`);lines.push(`Ach: ${ach!=null?Math.round(ach)+"%":""}`);}
+  const msg=lines.join("\n");$("msg").textContent=msg;return msg;}
+["date","target","sales","orders","traffic","et"].forEach(id=>$(id).addEventListener("input",()=>{
+  if(id==="target"){S.set("tbk_target",$("target").value);renderHype();}build();}));
+$("extra").addEventListener("change",()=>{S.set("tbk_extra",$("extra").checked?"1":"0");build();});
+$("send").onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent(build()),"_blank");
+$("copy").onclick=async()=>{const m=build();try{await navigator.clipboard.writeText(m);}catch(e){const r=document.createRange();r.selectNode($("msg"));getSelection().removeAllRanges();getSelection().addRange(r);document.execCommand("copy");}toast("✅ اتنسخ");};
+
+/* ---------- init ---------- */
+if(!target()){openTab("report");toast("حط التارجت الأول 🎯");}else openTab(S.get("tbk_tab")||"hype");
+syncToReport();renderHype();
 </script>
 </body>
 </html>
