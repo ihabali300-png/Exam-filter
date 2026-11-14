@@ -212,6 +212,9 @@ const S = [
  {r:"ret",sub:"رصيد المحفظة غير ظاهر",q:"الاسترداد على المحفظة والرصيد مش ظاهر للعميل",k:"محفظة wallet رصيد مش ظاهر store credit",p:"m",so:1,
   need:"رقم الطلب + جوال العميل + المبلغ",tip:"",
   tpl:"رصيد المحفظة غير ظاهر للعميل بعد الاسترداد.\nجوال العميل: \nالمبلغ: ___\nالمطلوب: إظهار الرصيد."},
+ {r:"ret",sub:"أخرى",ty:"q",q:"إضافة رصيد لمحفظة العميل (تعويض / فرق سعر / استرداد كرصيد)",k:"اضافه رصيد محفظه wallet store credit تعويض شحن رصيد كريدت",p:"m",so:1,
+  need:"رقم الطلب + جوال العميل + المبلغ + السبب",tip:"لو الرصيد اتضاف ومش ظاهر للعميل ← «رصيد المحفظة غير ظاهر».",
+  tpl:"المطلوب: إضافة رصيد لمحفظة العميل.\nجوال العميل: \nالمبلغ: ___ ريال\nالسبب: (تعويض / فرق سعر / استرداد كرصيد)\nموافقة المدير: (نعم / لا)"},
  {r:"ret",sub:"استفسار عن أهلية الاستبدال أو فرق السعر أو الموافقة",q:"ينفع العميل يبدّل؟ / فرق السعر كام؟ / محتاج موافقة؟",k:"استبدال تبديل exchange اهلية فرق سعر موافقة ينفع يرجع ارجاع فريم",p:"l",so:1,
   need:"رقم الطلب + تاريخ الشراء + المنتج الجديد",tip:"اكتب تاريخ الشراء — الأهلية بتعتمد على المدة.",
   tpl:"استفسار عن (أهلية الاستبدال / فرق السعر / الموافقة).\nتاريخ الشراء: \nالمنتج الحالي: \nالمنتج المطلوب: \nالسبب: "},
@@ -379,7 +382,7 @@ const S = [
   tpl:"طلب التحويل رقم ___\nالمشكلة: \nالمطلوب: "},
 ];
 const ORDER=["sale","trans","ins","ret","inv","disc","cash","cust","sys","it","otp","rx"];
-const SHORT={sale:"إلغاء، شحن، عنوان، حالة الطلب",trans:"تحويل، بوليصة، تعبئة مخزون",ins:"موافقة، مبلغ، شركة التأمين",ret:"استرداد، تابي/تمارا، محفظة",inv:"مخزون، سعر، منتج مش لاقيه",disc:"كوبون، خصم، عرض",cash:"شيفت، رصيد، إيداع، موظف",cust:"حساب، OTP، طلب أونلاين",sys:"دخول، النظام واقف",it:"Geidea، نت، طابعة، أجهزة",otp:"العميل واقف ومحتاج يكمل",rx:"وصفة، عدسة، QC، PR/PO"};
+const SHORT={sale:"إلغاء، شحن، عنوان، حالة الطلب",trans:"تحويل، بوليصة، تعبئة مخزون",ins:"موافقة، مبلغ، شركة التأمين",ret:"استرداد، تابي/تمارا، رصيد المحفظة",inv:"مخزون، سعر، منتج مش لاقيه",disc:"كوبون، خصم، عرض",cash:"شيفت، رصيد، إيداع، موظف",cust:"حساب، OTP، طلب أونلاين",sys:"دخول، النظام واقف",it:"Geidea، نت، طابعة، أجهزة",otp:"العميل واقف ومحتاج يكمل",rx:"وصفة، عدسة، QC، PR/PO"};
 const PN={h:["عالية","h","العميل أو البيع واقف"],m:["متوسطة","m","محتاجة حل النهارده"],l:["منخفضة","l","مش مستعجلة"]};
 const TY={b:["عائق — لا أستطيع المتابعة","h"],f:["خلل — هناك شيء لا يعمل","m"],q:["سؤال / مساعدة","l"]};
 function typeOf(s){
@@ -419,11 +422,17 @@ function reason(k){
   bindItems();
 }
 function search(q){
-  const ws=norm(q).split(/\s+/).filter(Boolean);
-  const res=S.map((s,i)=>{const hay=norm([s.q,s.k,s.sub||"",R[s.r].t,s.need].join(" "));let sc=0,all=true;ws.forEach(w=>{if(hay.includes(w))sc+=(norm((s.sub||"")+" "+s.q).includes(w)?2:1);else all=false;});return{i,sc:all?sc+10:sc};})
-    .filter(o=>o.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,15);
-  $("view").innerHTML=res.length?`<div class="lbl">${res.length} نتيجة</div><div class="list">${res.map(o=>item(o.i,true)).join("")}</div>`
-    :`<div class="list"><div class="empty">😕 مفيش نتيجة — جرّب كلمة تانية، أو امسح البحث واختار السبب من المربعات</div></div>`;
+  const ws=norm(q).split(/\s+/).filter(w=>w.length>1);
+  let res=S.map((s,i)=>{const head=norm((s.sub||"")+" "+s.q),hay=norm([s.k,R[s.r].t,s.need].join(" "));
+    let hit=0,sc=0;ws.forEach(w=>{const core=w.replace(/^(وال|بال|لل|ال)/,"");const st=core.length>3?core.replace(/[هي]$/,""):core;
+      if(head.includes(w)){hit++;sc+=3;} else if(hay.includes(w)){hit++;sc+=2;} else if(head.includes(st)||hay.includes(st)){hit++;sc+=1;}});
+    return{i,hit,sc};}).filter(o=>o.hit>0);
+  const top=Math.max(0,...res.map(o=>o.hit));
+  const need=ws.length>=2?Math.max(top-1,Math.ceil(ws.length/2)):1;
+  res=res.filter(o=>o.hit>=need).sort((a,b)=>b.hit-a.hit||b.sc-a.sc).slice(0,8);
+  $("view").innerHTML=(res.length?`<div class="lbl">أقرب ${res.length} نتيجة</div><div class="list">${res.map(o=>item(o.i,true)).join("")}</div>`
+    :`<div class="list"><div class="empty">😕 مفيش حاجة مطابقة</div></div>`)+
+    `<div class="note">💡 مش لاقي موقفك بالظبط؟ اختار السبب الأقرب، وبعدين اختار «أخرى»، واشرح التفاصيل في الوصف. وتقدر تعدّل الموضوع والوصف قبل ما تنسخهم.</div>`;
   bindItems();
 }
 function result(i){
@@ -440,14 +449,15 @@ function result(i){
     ${s.doc?f("رقم المستند","⚠️ إجباري — اكتبه",null):""}
     ${f("النوع",`<span class="pill ${ty[1]}">${ty[0]}</span>`,null)}
     ${f("الأولوية",`<span class="pill ${p[1]}">${p[0]}</span> <span class="sm">${p[2]}</span>`,null)}
-    ${f("الموضوع",esc(subj),subj)}
+    <div class="f"><div class="tx"><div class="k">الموضوع — تقدر تعدّله</div><input id="sj" value="${esc(subj)}" style="width:100%;font:inherit;font-weight:700;font-size:15px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:2px"></div><button class="cb" id="sjc">📋 نسخ</button></div>
   </div>
   <div class="box">📎 <b>جهّز:</b> ${esc(s.need)}${s.tip?`<div style="margin-top:6px">💡 ${esc(s.tip)}</div>`:""}</div>
-  <div class="lbl">صف المشكلة — املا الفراغات ___</div>
+  <div class="lbl">صف المشكلة — املا الفراغات ___ وعدّل براحتك</div>
   <textarea id="tx">${esc(s.tpl)}</textarea>
   <button class="big" id="cp">📋 انسخ الوصف</button>`;
   document.querySelectorAll(".cb").forEach(b=>b.onclick=()=>cpy(b,decodeURIComponent(b.dataset.c)));
   $("cp").onclick=()=>cpy($("cp"),$("tx").value);
+  $("sjc").onclick=()=>cpy($("sjc"),$("sj").value);
 }
 let hist=[];
 function go(st,push=true){ if(push) hist.push(state); state=st; render(); window.scrollTo(0,0); }
