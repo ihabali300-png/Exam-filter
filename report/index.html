@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>التقرير اليومي – تبوك بارك</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#f1f5f9;--mut:#94a3b8;--acc:#22c55e;--warn:#f59e0b;--bad:#ef4444;--blue:#38bdf8}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--txt);padding:16px;display:flex;justify-content:center}
+  .wrap{width:100%;max-width:440px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .row{display:flex;gap:10px;margin-bottom:10px}
+  .row:last-child{margin-bottom:0}
+  .f{flex:1;display:flex;flex-direction:column;gap:4px}
+  label{font-size:13px;color:var(--mut)}
+  input{width:100%;background:#0b1222;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px;font-size:17px;text-align:center;direction:ltr}
+  input:focus{outline:none;border-color:var(--blue)}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .k{background:#0b1222;border-radius:10px;padding:10px 6px;text-align:center}
+  .k b{display:block;font-size:20px;direction:ltr}
+  .k span{font-size:12px;color:var(--mut)}
+  .bar{height:10px;background:#0b1222;border-radius:6px;overflow:hidden;margin-top:12px}
+  .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+  .note{font-size:13px;color:var(--mut);margin-top:8px;text-align:center}
+  pre{background:#0b1222;border-radius:10px;padding:12px;margin:0;font-family:inherit;font-size:15px;direction:ltr;text-align:left;white-space:pre-wrap}
+  .chk{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px}
+  .chk input{width:auto}
+  .btns{display:flex;gap:10px}
+  button{flex:1;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;cursor:pointer}
+  .wa{background:#25d366;color:#04210f}
+  .cp{background:var(--line);color:var(--txt)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;transition:.3s}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📊 التقرير اليومي</h1>
+  <div class="sub">فرع تبوك بارك (TBK) — دخّل الأرقام واضغط إرسال</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="f"><label>📅 التاريخ</label><input id="date" type="date"></div>
+      <div class="f"><label>🎯 التارجت</label><input id="target" type="number" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>💰 المبيعات</label><input id="sales" type="number" inputmode="decimal"></div>
+      <div class="f"><label>📦 الأوردرات</label><input id="orders" type="number" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>🚶 الزوار (Visitors)</label><input id="traffic" type="number" inputmode="numeric"></div>
+      <div class="f"><label>👓 الفحوصات (E.T)</label><input id="et" type="number" inputmode="numeric"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="kpis">
+      <div class="k"><b id="atv">–</b><span>متوسط الفاتورة</span></div>
+      <div class="k"><b id="cr">–</b><span>نسبة التحويل</span></div>
+      <div class="k"><b id="ach">–</b><span>تحقيق التارجت</span></div>
+    </div>
+    <div class="bar"><i id="barI"></i></div>
+    <div class="note" id="rem"></div>
+  </div>
+
+  <div class="card">
+    <pre id="msg"></pre>
+    <label class="chk"><input type="checkbox" id="extra"> إضافة نسبة التحويل والتحقيق للرسالة</label>
+  </div>
+
+  <div class="btns">
+    <button class="wa" id="send">📲 إرسال واتساب</button>
+    <button class="cp" id="copy">📋 نسخ</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ids = ["date","target","sales","orders","traffic","et"];
+const store = {
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+};
+
+// default date = yesterday if before 6am, else today
+(function(){
+  const d = new Date(); if(d.getHours()<6) d.setDate(d.getDate()-1);
+  $("date").value = d.toISOString().slice(0,10);
+  const t = store.get("tbk_target"); if(t) $("target").value = t;
+  $("extra").checked = store.get("tbk_extra")==="1";
+})();
+
+function n(id){ const v=parseFloat($(id).value); return isNaN(v)?null:v; }
+function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-"); return `${d}-${m}-${y}`; }
+
+function build(){
+  const T=n("target"), S=n("sales"), O=n("orders"), V=n("traffic"), E=n("et");
+  const atv = (S!=null && O) ? Math.round(S/O) : null;
+  const cr  = (O!=null && V) ? (O/V*100) : null;
+  const ach = (S!=null && T) ? (S/T*100) : null;
+
+  $("atv").textContent = atv ?? "–";
+  $("cr").textContent  = cr!=null ? cr.toFixed(1)+"%" : "–";
+  $("ach").textContent = ach!=null ? Math.round(ach)+"%" : "–";
+  $("barI").style.width = Math.min(ach||0,100)+"%";
+  $("barI").style.background = ach==null?"var(--acc)":ach>=100?"var(--acc)":ach>=70?"var(--warn)":"var(--bad)";
+  $("rem").textContent = (T&&S!=null) ? (S>=T ? "✅ التارجت اتحقق" : `المتبقي للتارجت: ${Math.round(T-S)} ريال`) : "";
+
+  let lines = [
+    "TBK",
+    fmtDate($("date").value),
+    `Target:${T ?? ""}`,
+    `Sales: ${S ?? ""}`,
+    `Orders:${O ?? ""}`,
+    `Traffic:${V ?? ""}`,
+    `ATV: ${atv ?? ""}`,
+    `E.t :${E ?? ""}`
+  ];
+  if($("extra").checked){
+    lines.push(`CR: ${cr!=null?cr.toFixed(1)+"%":""}`);
+    lines.push(`Ach: ${ach!=null?Math.round(ach)+"%":""}`);
+  }
+  const msg = lines.join("\n");
+  $("msg").textContent = msg;
+  return msg;
+}
+
+ids.forEach(id=>$(id).addEventListener("input",()=>{
+  if(id==="target") store.set("tbk_target",$("target").value);
+  build();
+}));
+$("extra").addEventListener("change",()=>{store.set("tbk_extra",$("extra").checked?"1":"0");build();});
+
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800);}
+
+$("send").onclick=()=>{
+  const msg=build();
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+};
+$("copy").onclick=async()=>{
+  const msg=build();
+  try{await navigator.clipboard.writeText(msg);toast("✅ اتنسخ");}
+  catch(e){const r=document.createRange();r.selectNode($("msg"));getSelection().removeAllRanges();getSelection().addRange(r);document.execCommand("copy");toast("✅ اتنسخ");}
+};
+build();
+</script>
+</body>
+</html>
