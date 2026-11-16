@@ -920,8 +920,8 @@ function waLink(b){
   const ph = '966' + String(b.phone).replace(/\D/g, '').replace(/^0/, '');
   const when = b.date === today() ? `اليوم الساعة ${fmt12(b.time)}` : `${dayLabel(b.date)} الساعة ${fmt12(b.time)}`;
   const txt = nowDue
-    ? `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nحبينا نذكّرك إن موعد فحص النظر حقك حان الحين ⏰ (${fmt12(b.time)})\nننتظرك في الفرع، وإذا تأخرت شوي ما عليه، عندك ربع ساعة سماح 🙏`
-    : `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nنذكّرك بموعد فحص النظر حقك ${when} ✅\nننتظرك، ولو حاب تغيّر الموعد كلمنا هنا 🙏`;
+    ? `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nحبينا نذكّرك إن موعدك فحص النظر حان الان ⏰ (${fmt12(b.time)})\nننتظرك في الفرع`
+    : `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nحبينا نذكّرك إن موعدك فحص النظر ${when} ⏰\nننتظرك في الفرع`;
   return {href: `https://api.whatsapp.com/send?phone=${ph}&text=${encodeURIComponent(txt)}`, nowDue};
 }
 let waSent = LS.get('waSent', {});
