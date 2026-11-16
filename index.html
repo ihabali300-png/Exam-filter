@@ -186,13 +186,16 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .et2{grid-column:1 / -1;font-size:.78rem;color:var(--muted)}
 .remote{text-align:center;font-weight:700;font-size:.9rem;color:var(--accent);background:var(--accent-soft);border-radius:10px;padding:5px}
 .remote[hidden]{display:none}
+.bkrow .acts a.wa{font:inherit;font-size:.8rem;font-weight:700;text-decoration:none;border-radius:8px;padding:2px 8px;background:#25D366;color:#fff;border:1.5px solid #25D366}
+.bkrow .acts a.wa.due{animation:blinkG 1.3s ease-in-out infinite}
+@keyframes blinkG{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.8)}50%{box-shadow:0 0 0 7px rgba(37,211,102,0)}}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
 .tipbox{background:var(--bg);border-inline-start:4px solid var(--mid);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:.9rem;display:flex;flex-direction:column;gap:6px}
 .tipbox[hidden]{display:none}
 .tipbox b{font-family:var(--display)}
 .tipbox q{display:block;font-weight:600;quotes:"«" "»"}
-@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn,.new.big.book,.sig{animation:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.tipbtn,.bookbtn,.new.big.book,.sig,.bkrow .acts a.wa.due{animation:none}}
 
 /* ===== تخطيط شاشة واحدة بدون نزول ===== */
 .col{display:flex;flex-direction:column;gap:12px;min-width:0}
@@ -911,8 +914,22 @@ qEl.addEventListener('input', () => {
   }, 500);
 });
 const ST_C = {'قادم':'--accent','حضر':'--good','لم يحضر':'--vlow','ملغي':'--muted'};
+const BR = 'أوبتكال كلوب تبوك بارك';
+function waLink(b){
+  const m = minsTo(b), nowDue = b.date === today() && m <= 10;
+  const ph = '966' + String(b.phone).replace(/\D/g, '').replace(/^0/, '');
+  const remote = examType(b.date, b.time) === 'remote';
+  const when = b.date === today() ? `اليوم الساعة ${fmt12(b.time)}` : `${dayLabel(b.date)} الساعة ${fmt12(b.time)}`;
+  const txt = nowDue
+    ? `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nحبينا نذكّرك إن موعد فحص النظر حقك حان الحين ⏰ (${fmt12(b.time)})\n${remote ? 'الفحص بيكون عن بُعد بتقنية حديثة 💻\n' : ''}ننتظرك في الفرع، وإذا تأخرت شوي ما عليه، عندك ربع ساعة سماح 🙏`
+    : `حيّاك الله ${b.name} 👋\nمعك فريق ${BR} 👓\nنذكّرك بموعد فحص النظر حقك ${when} ✅\n${remote ? 'الفحص بيكون عن بُعد بتقنية حديثة 💻\n' : ''}ننتظرك، ولو حاب تغيّر الموعد كلمنا هنا 🙏`;
+  return {href: `https://api.whatsapp.com/send?phone=${ph}&text=${encodeURIComponent(txt)}`, nowDue};
+}
+let waSent = LS.get('waSent', {});
+function markWa(id){ waSent[id] = 1; LS.set('waSent', waSent); setTimeout(renderBookings, 300); }
 function rowHTML(b, st, c, due){
   const live = b.status === 'قادم';
+  const w = live ? waLink(b) : null;
   return `<div class="bkrow${due ? ' due' : ''}">
       <span class="nm">${String(b.name).replace(/</g,'&lt;')}</span><span class="tm">${b.date !== today() ? dayLabel(b.date) + " " : ""}${fmt12(b.time)}</span>
       <span class="st" style="background:var(${c})">${st}</span><span class="ph">${b.phone}</span><span class="et2">${typeLabel(examType(b.date, b.time))}</span>
@@ -920,6 +937,7 @@ function rowHTML(b, st, c, due){
         ${live ? `<button type="button" onclick="setStatus('${b.id}','حضر')">✅ حضر</button>
         <button type="button" onclick="setStatus('${b.id}','لم يحضر')">✖ لم يحضر</button>
         <button type="button" onclick="setStatus('${b.id}','ملغي')">🚫 إلغاء</button>` : ''}
+        ${w ? `<a class="wa${w.nowDue && !waSent[b.id] ? ' due' : ''}" href="${w.href}" target="_blank" rel="noopener" onclick="markWa('${b.id}')">${waSent[b.id] ? '✔️ اتبعت، ابعت تاني' : w.nowDue ? '📲 ابعتله: حان موعدك' : '📲 تذكير واتساب'}</a>` : ''}
         <button type="button" onclick="openEdit('${b.id}')">✏️ تعديل</button>
         <button type="button" onclick="delBooking('${b.id}', this)">🗑 حذف</button>
       </div></div>`;
@@ -948,7 +966,7 @@ function renderBookings(){
     else if (m > 0){ st = `قريب، بعد ${m} د`; c = '--mid'; due = true; }
     else if (m >= -GRACE){ st = `حان موعده، باقي ${GRACE + m} د سماح`; c = '--mid'; due = true; }
     else { st = 'متأخر، انتهى السماح'; c = '--vlow'; due = true; }
-    if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}`); }
+    if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}، ابعتله واتساب من زرار 📲`); }
     return rowHTML(b, st, c, due);
   }).join('');
 }
