@@ -188,6 +188,8 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
 .remote[hidden]{display:none}
 .bkrow .acts a.wa{font:inherit;font-size:.8rem;font-weight:700;text-decoration:none;border-radius:8px;padding:2px 8px;background:#25D366;color:#fff;border:1.5px solid #25D366}
 .bkrow .acts a.wa.due{animation:blinkG 1.3s ease-in-out infinite}
+.sndtest{font:inherit;border:1.5px solid var(--line);background:transparent;border-radius:8px;padding:0 6px;cursor:pointer;font-size:.9rem;line-height:1.6}
+.sndtest:focus-visible{outline:2px solid var(--accent)}
 @keyframes blinkG{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.8)}50%{box-shadow:0 0 0 7px rgba(37,211,102,0)}}
 @keyframes blinkR{0%,100%{box-shadow:0 0 0 0 rgba(210,81,43,.75);opacity:1}50%{box-shadow:0 0 0 10px rgba(210,81,43,0);opacity:.7}}
 @keyframes blink{0%,100%{box-shadow:0 0 0 0 rgba(217,138,6,.7);opacity:1}50%{box-shadow:0 0 0 8px rgba(217,138,6,0);opacity:.75}}
@@ -317,6 +319,7 @@ h1{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-hei
         <div class="head">
           <h3>📅 مواعيد الفحص المحجوزة</h3>
           <span class="cnt" id="bkCnt">0</span>
+          <button type="button" class="sndtest" id="sndTest" title="تجربة صوت التنبيه" aria-label="تجربة صوت التنبيه">🔔</button>
           <span class="conn" id="conn"><i></i><span>محلي</span></span>
         </div>
         <div class="srch"><input id="bkQ" type="text" inputmode="tel" maxlength="10" placeholder="🔍 ابحث برقم الجوال" autocomplete="off" aria-label="ابحث عن موعد برقم الجوال" dir="ltr"></div>
@@ -822,6 +825,7 @@ modal.addEventListener('click', e => { if (e.target === modal) closeBook(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeBook(); });
 document.getElementById('mPhone').addEventListener('input', e => { e.target.value = toEn(e.target.value).replace(/\D/g, ''); });
 document.getElementById('bkAdd').addEventListener('click', openBook);
+document.getElementById('sndTest').addEventListener('click', () => { beep(); toast('🔔 ده صوت التنبيه لما ييجي موعد عميل'); });
 
 document.getElementById('mForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -948,7 +952,24 @@ function renderSearch(list){
   if (!all.length){ list.innerHTML = `<p class="empty">${API && searchQ.length >= 4 ? 'جاري البحث…' : searchQ.length < 4 ? 'اكتب ٤ أرقام على الأقل' : 'لا يوجد موعد بهذا الرقم'}</p>`; return; }
   list.innerHTML = all.map(b => rowHTML(b, b.status === 'قادم' && b.date < today() ? 'فات موعده' : b.status, ST_C[b.status] || '--muted', false)).join('');
 }
-let alerted = {};
+let alerted = {}, beeped = {};
+/* صوت التنبيه: تيت تيت تيييت */
+let actx = null;
+function unlockAudio(){ try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch(e){} }
+document.addEventListener('pointerdown', unlockAudio, {once:false});
+function beep(){
+  unlockAudio(); if (!actx) return;
+  const t0 = actx.currentTime + 0.05;
+  [[0, .14], [.22, .14], [.44, .45], [1.2, .14], [1.42, .14], [1.64, .45]].forEach(([at, dur]) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'square'; o.frequency.value = 1320;
+    g.gain.setValueAtTime(0.0001, t0 + at);
+    g.gain.exponentialRampToValueAtTime(0.35, t0 + at + 0.01);
+    g.gain.setValueAtTime(0.35, t0 + at + dur - 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+    o.connect(g).connect(actx.destination); o.start(t0 + at); o.stop(t0 + at + dur + 0.02);
+  });
+}
 function renderBookings(){
   const act = bookings.filter(b => b.status === 'قادم').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
   document.getElementById('bkCnt').textContent = act.length;
@@ -966,6 +987,7 @@ function renderBookings(){
     else if (m >= -GRACE){ st = `حان موعده، باقي ${GRACE + m} د سماح`; c = '--mid'; due = true; }
     else { st = 'متأخر، انتهى السماح'; c = '--vlow'; due = true; }
     if (m <= 0 && m >= -GRACE && !alerted[b.id]){ alerted[b.id] = 1; toast(`🔔 حان موعد ${b.name} الساعة ${fmt12(b.time)}، ابعتله واتساب من زرار 📲`); }
+    if (m <= 0 && m >= -GRACE && !waSent[b.id]){ const k = Math.floor(-m / 2); if (beeped[b.id] === undefined || (k > beeped[b.id] && k <= 4)){ beeped[b.id] = k; beep(); } }
     return rowHTML(b, st, c, due);
   }).join('');
 }
